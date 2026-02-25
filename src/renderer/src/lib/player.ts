@@ -1,0 +1,458 @@
+import lodash, { clamp } from 'lodash'
+import { AppTypes } from 'src/types/app'
+import WAudio from './waudio'
+import { usePlayerStore } from '@renderer/store/player'
+import { usePlaylistStore } from '@renderer/store/playlist'
+import useConfigStore from '@renderer/store/config'
+import { computed, watch } from 'vue'
+
+export class Player {
+    public playingId: AppTypes.ITrackId | null = null
+    public waudio: WAudio
+    private playerStore = usePlayerStore()
+    private playlistStore = usePlaylistStore()
+    private configStore = useConfigStore()
+
+    public isPlaying: boolean = false
+
+    constructor(waudio?: WAudio) {
+        this.waudio = waudio || new WAudio()
+        this.addListener()
+        this.addOSCListener()
+        if (this.playerStore.onplay?.trackId) {
+            this.playingId = this.playerStore.onplay?.trackId
+        }
+        this.addSystemMediaSessionListener()
+        this.startWatcher()
+    }
+
+    private addListener() {
+        this.waudio.on('play', () => {
+            this.playerStore.updatePlayState(true)
+            window.transapi.set('audioPlaystateUpdate', true)
+            window.transapi.toEmit('audioPlay', true)
+            this.isPlaying = true
+        })
+        this.waudio.on('pause', () => {
+            this.playerStore.updatePlayState(false)
+            window.transapi.set('audioPlaystateUpdate', false)
+            window.transapi.toEmit('audioPause', true)
+            this.isPlaying = false
+        })
+        this.waudio.on('timeupdate', (ct: number) => {
+            this.playerStore.updateCurrentTime(ct)
+            window.transapi.set('audioTimeUpdate', ct)
+            this.updateSystemMediaSessionPlayState()
+        })
+        this.waudio.on('canplay', (dt: number) => {
+            this.playerStore.updateDuration(dt)
+            window.transapi.set('audioDuration', dt)
+            window.transapi.toEmit('audioCanplay', true)
+        })
+        this.waudio.on('end', this.handleAudioEnd.bind(this))
+        this.waudio.on('volumechange', (volume: number) => {
+            window.transapi.set('audioVolumeChange', volume)
+        })
+    }
+
+    private addOSCListener() {
+        window.electron.ipcRenderer.on('osc:playerPause', () => {
+            this.control.pause()
+        })
+        window.electron.ipcRenderer.on('osc:playerPlay', () => {
+            this.control.play()
+        })
+        window.electron.ipcRenderer.on('osc:playerNext', () => {
+            this.next()
+        })
+        window.electron.ipcRenderer.on('osc:playerPrevious', () => {
+            this.previous()
+        })
+        window.electron.ipcRenderer.on('osc:playerToggle', () => {
+            this.control.togglePlayPause()
+        })
+        window.electron.ipcRenderer.on('osc:playMode', (_, playMode) => {
+            const playModeStr = String(playMode)
+            if (['list', 'listloop', 'shuffle', 'loop'].includes(playModeStr)) {
+                this.playerStore.setPlayMode(playModeStr as any)
+            }
+        })
+        window.electron.ipcRenderer.on('osc:playModeSwitch', () => {
+            this.playerStore.switchPlaymode()
+        })
+        window.electron.ipcRenderer.on('osc:playerPlayTrack', (_, trackB64: string) => {
+            if (typeof trackB64 === 'string') {
+                try {
+                    const decodeItrack = atob(trackB64)
+                    const itrack = JSON.parse(decodeItrack) as AppTypes.ITrackId
+                    if (itrack && itrack.id && ['ncm', 'bili', 'local'].includes(itrack.platform)) {
+                        if (itrack.platform === 'local' && itrack.file) {
+                            this.playTrack(itrack)
+                        }
+                        else {
+                            this.playTrack(itrack)
+                        }
+                    }
+                } catch (error) {
+                    console.error(error)
+                }
+
+            }
+        })
+        window.electron.ipcRenderer.on('osc:playerVolume', (_, volume: string | number) => {
+            const vol = Number(volume)
+            if (vol && Number.isSafeInteger(vol)) {
+                const v = clamp(vol, 0, 1)
+                this.control.volume(v)
+            }
+        })
+        window.electron.ipcRenderer.on('osc:playerSeek', (_, seek: string | number) => {
+            const seekTime = Number(seek)
+            if (seekTime && Number.isSafeInteger(seekTime)) {
+                this.control.seek(seekTime)
+            }
+        })
+    }
+
+    private startWatcher() {
+        const enableEqualizer = computed(() => this.configStore.enableEqualizer)
+        watch(enableEqualizer, () => {
+            if (enableEqualizer.value) {
+                this.waudio.enalbeEqualizer()
+            }
+            else {
+                this.waudio.disableEqualizer()
+            }
+        }, { immediate: true })
+
+        const equalizerFrequencies = computed(() => this.configStore.equalizerFrequencies)
+        const equalizerQuality = computed(() => this.configStore.equalizerQuality)
+        const equalizerGains = computed(() => this.configStore.equalizerGains)
+        watch(equalizerGains, () => {
+            this.waudio.updateEqualizer(equalizerFrequencies.value, equalizerGains.value, equalizerQuality.value)
+        }, {
+            deep: true,
+            immediate: true
+        })
+
+        watch(equalizerQuality, () => {
+            this.waudio.updateEqualizer(equalizerFrequencies.value, equalizerGains.value, equalizerQuality.value)
+        }, {
+            immediate: true
+        })
+    }
+
+    private handleAudioEnd() {
+        const playMode = this.playerStore.player.playMode
+        window.transapi.toEmit('audioEnd', true)
+        if (playMode === 'loop') {
+            this.waudio.seek(0)
+            return
+        }
+        else {
+            this.next()
+        }
+    }
+
+    public control = {
+        play: () => {
+            this.waudio.play()
+            window.transapi.toEmit('audioUserRequestPlay', true)
+        },
+        pause: () => {
+            this.waudio.pause()
+            window.transapi.toEmit('audioUserRequestPause', true)
+        },
+        seek: (time: number) => {
+            this.waudio.seek(time)
+            window.transapi.toEmit('audioSeek', time)
+        },
+        togglePlayPause: () => {
+            if (this.isPlaying) { this.waudio.pause() }
+            else { this.waudio.play() }
+        },
+        volume: (volume: number) => this.waudio.volume(volume)
+    }
+
+    get list(): AppTypes.ITrackId[] {
+        return this.playerStore.playlist
+    }
+
+    set list(listArray: AppTypes.ITrackId[]) {
+        const shuffleList = lodash.shuffle(listArray)
+        this.playerStore.setPlayerList(listArray, shuffleList)
+    }
+
+    public next() {
+        const currentIndex = this.playerStore.getIndex()
+        let nextIndex = currentIndex + 1
+        console.log(nextIndex)
+        if (nextIndex >= this.list.length) {
+            if (this.playerStore.player.playMode === 'listloop') {
+                nextIndex = 0
+            } else {
+                return
+            }
+        }
+        const nextTrackId = this.list[nextIndex]
+
+        window.transapi.toEmit('playerNextSong', [this._noProxy(nextTrackId), nextIndex])
+
+
+        this.playTrack(nextTrackId)
+    }
+
+    public previous() {
+        const currentIndex = this.playerStore.getIndex()
+        let preIndex = currentIndex - 1
+        if (preIndex < 0) {
+            if (this.playerStore.player.playMode === 'listloop') {
+                preIndex = this.list.length - 1
+            }
+            else {
+                return
+            }
+        }
+        const preTrackId = this.list[preIndex]
+
+        window.transapi.toEmit('playerPreviousSong', [this._noProxy(preTrackId), preIndex])
+
+        this.playTrack(preTrackId)
+    }
+
+    public playTrack(trackId: AppTypes.ITrackId) {
+        this.playingId = trackId
+
+        window.transapi.toEmit('playerPlaySong', this._noProxy(trackId))
+
+        if (trackId.platform === 'ncm') {
+            this.playNcmTrack(trackId)
+        }
+        else if (trackId.platform === 'bili') {
+            this.playBiliTrack(trackId)
+        }
+        else if (trackId.platform === 'local') {
+            this.playLocalTrack(trackId)
+        }
+    }
+
+    private async playNcmTrack(trackId: AppTypes.ITrackId) {
+        const ncmid = trackId.id as unknown as number
+        const track = await this.getSourceFromNCM(ncmid)
+        track.url = track.url.replaceAll('http://', 'https://')
+        await this.waudio.loadSrc(track.url, true)
+        const detail = await window.ncmapi.songDetail(ncmid, true)
+        const lyric = await window.ncmapi.songLyric(ncmid)
+
+        this.updateSystemMediaSession(detail[0])
+        this.playerStore.setOnPlayTrack(track, detail[0], trackId)
+        this.playerStore.setLyric(lyric)
+    }
+
+    private async playBiliTrack(trackId: AppTypes.IBiliTrackId) {
+        const bvid = trackId.id
+        const detail = await window.biliapi.songDetail(bvid)
+        const track = await this.getSourceFromBili(bvid, detail.bilicid)
+        await this.waudio.loadSrc(track.url, true)
+
+        this.updateSystemMediaSession(detail)
+        this.playerStore.setOnPlayTrack(track, detail, trackId)
+        this.playerStore.setLyric({
+            pure: true,
+            lyrics: []
+        })
+    }
+
+    private async playLocalTrack(localId: AppTypes.ILocalTrackId) {
+        const lid = localId.id
+        const file = localId.file
+        await this.waudio.loadSrc(file)
+        let detail: AppTypes.ISong = await this.playlistStore.getSong(lid)
+        if (detail.type === 'local') {
+            if (this.configStore.useNcmSongInfoForMatchedLocalMusic && detail.ncmMatchId) {
+                const ncmDetail = await window.ncmapi.songDetail(detail.ncmMatchId, true)
+                if (ncmDetail.length) {
+                    detail = this.playlistStore.injectNcmDetailToLocalMusic(detail, ncmDetail[0])
+                }
+            }
+            let track: AppTypes.ISongTrack
+            if (this.configStore.useNcmMediaSourceForMatchedLocalMusic && detail.ncmMatchId) {
+                track = await this.getSourceFromNCM(detail.ncmMatchId)
+            }
+            else {
+                track = await window.localapi.getLocalTrack(file)
+            }
+            if (this.configStore.useNcmLyricForMatchedLocalMusic && detail.ncmMatchId) {
+                const lyric = await window.ncmapi.songLyric(detail.ncmMatchId)
+                this.playerStore.setLyric(lyric)
+            }
+            else {
+                this.playerStore.setLyric({
+                    pure: true,
+                    lyrics: []
+                })
+            }
+            this.updateSystemMediaSession(detail)
+            this.playerStore.setOnPlayTrack(track, detail, localId)
+        }
+    }
+
+    private async getSourceFromNCM(ncmid: number): Promise<AppTypes.ISongTrack> {
+        const ck = `ncm-${ncmid}-${this.configStore.audioQuality}`
+        const cache = await window.cacheapi.getTrackCache(ck)
+        if (cache) {
+            return cache
+        }
+        const track = await window.ncmapi.songUrl(ncmid, this.configStore.audioQuality)
+        window.cacheapi.cacheTrack(ck, track)
+        return track
+    }
+
+    private async getSourceFromBili(bv: string, cid: number): Promise<AppTypes.ISongTrack> {
+        const ck = `bili-${bv}-${cid}`
+        const cache = await window.cacheapi.getTrackCache(ck)
+        if (cache) {
+            return cache
+        }
+        const track = await window.biliapi.bvAudioTrack(bv, cid)
+        window.cacheapi.cacheTrack(ck, track)
+        return track
+    }
+
+    public async playPlaylist(id: string | number, type: 'custom' | 'ncm', playId?: AppTypes.ITrackId) {
+        if (type === 'ncm' && typeof id === 'number') {
+            const playlist = await window.ncmapi.playlistDetail(id, true)
+            const trackIds: AppTypes.ITrackId[] = playlist.tracks
+            this.playTrackList(trackIds, playId)
+
+        }
+        else if (typeof id === 'string') {
+            const playlist = await this.playlistStore.getPlaylist(id)
+            const trackIds = playlist.tracks
+            this.playTrackList(trackIds)
+        }
+    }
+
+    private addSystemMediaSessionListener() {
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.setActionHandler('play', () => {
+                this.control.play()
+            })
+            navigator.mediaSession.setActionHandler('pause', () => {
+                this.control.pause()
+            })
+            navigator.mediaSession.setActionHandler('previoustrack', () => {
+                this.previous()
+            })
+            navigator.mediaSession.setActionHandler('nexttrack', () => {
+                this.next()
+            })
+            navigator.mediaSession.setActionHandler('stop', () => {
+                this.control.pause()
+            })
+            navigator.mediaSession.setActionHandler('seekbackward', (event) => {
+                this.control.seek(this.waudio.currentTime - (event.seekTime || 10))
+            })
+            navigator.mediaSession.setActionHandler('seekforward', (event) => {
+                this.control.seek(this.waudio.currentTime - (event.seekTime || 10))
+            })
+        }
+    }
+
+    private updateSystemMediaSession(song: AppTypes.ISong) {
+        const meta: MediaMetadataInit = {
+            title: song?.name,
+            artist: song?.artists?.map((a) => a.name).join(','),
+            album: song?.album?.name,
+            artwork: [
+                {
+                    src: song?.cover || '',
+                    type: 'image/jpg',
+                    sizes: '224x224'
+                },
+                {
+                    src: song?.cover || '',
+                    type: 'image/jpg',
+                    sizes: '512x512'
+                }
+            ]
+        }
+        navigator.mediaSession.metadata = new MediaMetadata(meta)
+    }
+
+    private updateSystemMediaSessionPlayState() {
+        if ('setPositionState' in navigator.mediaSession) {
+            const duration = this.waudio.duration
+            if (duration !== undefined && !isNaN(duration)) {
+                navigator.mediaSession.setPositionState({
+                    duration: duration,
+                    playbackRate: 1.0,
+                    position: this.waudio.currentTime
+                })
+            }
+        }
+    }
+
+
+    public insertAfter(trackId: AppTypes.ITrackId) {
+        const currentIndex = this.playerStore.getIndex()
+        this.list.splice(currentIndex + 1, 0, trackId)
+    }
+
+    public insertBefore(trackId: AppTypes.ITrackId) {
+        const currentIndex = this.playerStore.getIndex()
+        const insertIndex = currentIndex - 1
+        if (insertIndex < 0) {
+            this.list.unshift(trackId)
+        }
+        else {
+            this.list.splice(insertIndex, 0, trackId)
+        }
+    }
+
+    public playTrackList(trackIds: AppTypes.ITrackId[], playId?: AppTypes.ITrackId) {
+        const isListSame = this.compareTrackListEqual(trackIds, this.list)
+        if (!isListSame) {
+            this.replaceTrackList(trackIds)
+        }
+        const trackToPlay = playId || this.list[0]
+        this.playTrack(trackToPlay)
+    }
+
+    private replaceTrackList(trackIds: AppTypes.ITrackId[]) {
+        this.list = trackIds
+    }
+
+    private compareTrackListEqual(arr1: AppTypes.ITrackId[], arr2: AppTypes.ITrackId[]): boolean {
+        if (arr1.length !== arr2.length) return false;
+        const createMap = (arr: AppTypes.ITrackId[]) => {
+            const map = new Map<string, Set<string | number>>();
+            for (const track of arr) {
+                const key = track.platform;
+                if (!map.has(key)) {
+                    map.set(key, new Set());
+                }
+                map.get(key)!.add(track.id);
+            }
+
+            return map;
+        };
+        const map1 = createMap(arr1);
+        const map2 = createMap(arr2);
+        if (map1.size !== map2.size) return false;
+        for (const [platform, ids1] of map1) {
+            const ids2 = map2.get(platform);
+            if (!ids2) return false;
+            if (ids1.size !== ids2.size) return false;
+            for (const id of ids1) {
+                if (!ids2.has(id)) return false;
+            }
+        }
+        return true;
+    }
+
+    private _noProxy(obj: any) {
+        return JSON.parse(JSON.stringify(obj))
+    }
+}
+
