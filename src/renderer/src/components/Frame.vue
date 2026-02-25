@@ -32,7 +32,7 @@ import { Icon } from '@iconify/vue';
 import useConfigStore from '@renderer/store/config';
 import { computed, ref } from 'vue';
 import SearchMatch from './SearchMatch.vue';
-import AudioRcg from './AudioRcg.vue';
+import AudioRcg from './audiomatch/AudioRcg.vue';
 const configStore = useConfigStore()
 const theme = computed(()=>configStore.appTheme)
 const showSearchMatchTab = ref<boolean>(false)
