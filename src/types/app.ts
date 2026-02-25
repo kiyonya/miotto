@@ -202,7 +202,7 @@ export namespace AppTypes {
     }
 
     export namespace MLyric {
-        interface TimelineWord {
+        export interface TimelineWord {
             startTime: number,
             duration: number,
             char: string

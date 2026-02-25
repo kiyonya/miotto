@@ -1,6 +1,6 @@
 <template>
     <div class="lyric-component" ref="lyricContainer">
-        <div class="lyric-list" >
+        <div class="lyric-list">
             <div class="line" v-for="(line, index) in renderLyrics" :class="{ highlight: line.highlight }"
                 :data-index="index">
 
@@ -80,12 +80,13 @@
 </template>
 <script setup lang="ts">
 import { scrollCenterDistance } from '@renderer/hooks/useScroll';
-import { usePlayerStore } from '@renderer/store/player';
 import { AppTypes } from 'src/types/app';
-import { computed, getCurrentInstance, nextTick, onMounted, onUnmounted, ref, watch, WatchHandle } from 'vue';
-const playerStore = usePlayerStore()
-const vueInstance = getCurrentInstance()
-const player = vueInstance?.appContext.config.globalProperties.$player
+import { computed, nextTick, onMounted, onUnmounted, ref, WatchHandle } from 'vue';
+import { computeHighlightV2 } from './lyric';
+
+const props = defineProps<{
+    lyric: AppTypes.ILyric
+}>()
 
 interface RenderLyric {
     mlyric: AppTypes.MLyric.CombineLine,
@@ -95,13 +96,9 @@ interface RenderLyric {
     gapPassProgress: number
 }
 
-const rawLyric = computed<AppTypes.MLyric.CombineLine[]>(() => {
-    return playerStore.lyric?.lyrics || []
-})
-
 const renderLyrics = computed<RenderLyric[]>(() => {
     const renderLyrics: RenderLyric[] = []
-    for (const lyric of rawLyric.value) {
+    for (const lyric of props.lyric.lyrics) {
         renderLyrics.push({
             mlyric: lyric,
             highlight: false,
@@ -132,76 +129,53 @@ let highlightIndexWatcher: WatchHandle | null = null
 let lyricWatcher: WatchHandle | null = null
 let pauseScroll: boolean = false
 let lyricScrollRestoreTimeout: NodeJS.Timeout | null = null
+let lastIndex: number = -Infinity
+let lyricComputeInterval:number =50
+let lastLyricComputeTime:number = 0
 
-function computeHighlight(time: number) {
-    const timems = time * 1000
-    const lyrics = rawLyric.value
-
-    for (let i = 0; i < lyrics.length; i++) {
-        const lyric = lyrics[i]
-        if (timems >= lyric.lineStartTime && timems < lyric.lineStartTime + lyric.lineDuration) {
-            highlightIndex.value = i
-            break
+function startRenderLyric() {
+    if (!window.$player?.waudio.paused) {
+        const now = Date.now()
+        if(now - lastLyricComputeTime > lyricComputeInterval){
+            lastLyricComputeTime = now
+            updateLyricState()
         }
     }
-    if (highlightIndex.value === -1) {
-        for (let i = lyrics.length - 1; i >= 0; i--) {
-            const lyric = lyrics[i]
-            if (timems >= lyric.lineStartTime) {
-                highlightIndex.value = i
-                if (timems >= lyric.lineStartTime + lyric.lineDuration) {
-                    highlightWordIndex.value = -2
-                }
-                break
-            }
-        }
-    }
-    if (highlightIndex.value >= 0 && highlightIndex.value < lyrics.length) {
-        const highlightLine = lyrics[highlightIndex.value]
-        if (highlightLine.type === 'gap') {
-
-            const gapStart = highlightLine.lineStartTime
-            const gapPass = (timems - gapStart) / highlightLine.lineDuration
-            highlightGapProgress.value = gapPass
-
-        } else if (highlightLine.mainLyric?.isTimeline) {
-            const mainLyric = highlightLine.mainLyric
-            let foundWord = false
-            for (let i = 0; i < mainLyric.words.length; i++) {
-                const word = mainLyric.words[i]
-
-                if (timems >= word.startTime && timems < word.startTime + word.duration) {
-                    highlightWordIndex.value = i
-                    break
-                }
-            }
-            if (!foundWord && mainLyric.words.length > 0) {
-                const lastWord = mainLyric.words[mainLyric.words.length - 1]
-                if (timems >= lastWord.startTime) {
-                    highlightWordIndex.value = mainLyric.words.length - 1
-                }
-            }
-        }
-    }
+    requestAnimationId = requestAnimationFrame(startRenderLyric)
 }
 
-function renderLyric() {
+function updateLyricState() {
+    if (window.$player?.waudio) {
+        const currentTime = window.$player.waudio.currentTime
+        const timems = currentTime * 1000
 
-    if (player?.waudio && !player.waudio.paused) {
-        const currentTime = player.waudio.currentTime
-        computeHighlight(currentTime)
+        highlightWordIndex.value = 0
+        highlightGapProgress.value = 0
+
+        const timeState = computeHighlightV2(props.lyric.lyrics, timems)
+        highlightIndex.value = timeState.lineIndex
+
+        if (timeState.lineIndex !== lastIndex) {
+            lastIndex = timeState.lineIndex
+            scrollLyric(timeState.lineIndex)
+        }
+
+        if (timeState.gapProgress) {
+            highlightGapProgress.value = timeState.gapProgress
+        }
+        if (timeState.wordIndex) {
+            highlightWordIndex.value = timeState.wordIndex
+        }
     }
-    requestAnimationId = requestAnimationFrame(renderLyric)
 }
 
 function scrollLyric(index: number) {
     const container = lyricContainer.value
     if (container) {
         if (index < 0) {
-            console.log("滚动到开头")
             container.scrollTo({
-                top:0,
-                behavior:'instant'
+                top: 0,
+                behavior: 'instant'
             })
             return
         }
@@ -210,16 +184,15 @@ function scrollLyric(index: number) {
         }
         const lines = Array.from(container.querySelectorAll('.line'))
         const hltLine = lines[index] as HTMLElement
-        const scrollDistance = scrollCenterDistance(hltLine,container)
+        const scrollDistance = scrollCenterDistance(hltLine, container)
         container.scrollTo({
-            top:scrollDistance,
-            behavior:'smooth'
+            top: scrollDistance,
+            behavior: 'smooth'
         })
     }
 }
 
-
-function onContainerScroll(){
+function onContainerScroll() {
     pauseScroll = true
     if (lyricScrollRestoreTimeout) {
         clearTimeout(lyricScrollRestoreTimeout)
@@ -238,34 +211,12 @@ function onResize() {
 }
 
 onMounted(() => {
-
     if (lyricContainer.value) {
-        lyricContainer.value.addEventListener('scroll',onContainerScroll)
+        lyricContainer.value.addEventListener('scroll', onContainerScroll)
     }
-
     window.addEventListener('resize', onResize)
-
-    highlightIndexWatcher = watch(highlightIndex, () => {
-        requestAnimationFrame(()=>{
-             scrollLyric(highlightIndex.value)
-        })
-    }, {
-        immediate: true
-    })
-
-    lyricWatcher = watch(rawLyric, () => {
-       highlightIndex.value = -1
-        nextTick().then(() => {
-            scrollLyric(-1)
-        })
-    })
-
-    //初始化加载一下
-    if (player) {
-        const currentTime = player.waudio.currentTime
-        computeHighlight(currentTime)
-    }
-    renderLyric()
+    updateLyricState()
+    startRenderLyric()
 })
 
 onUnmounted(() => {
@@ -273,7 +224,7 @@ onUnmounted(() => {
     window.removeEventListener('resize', onResize)
 
     if (lyricContainer.value) {
-        lyricContainer.value.removeEventListener('scroll',onContainerScroll)
+        lyricContainer.value.removeEventListener('scroll', onContainerScroll)
     }
 
     if (requestAnimationId) {

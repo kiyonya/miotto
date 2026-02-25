@@ -52,14 +52,15 @@
                     <Icon icon="tabler:player-track-next-filled" />
                 </button>
                 <button class="control-btn" @click="switchDisplayMode">
-                    <Icon icon="tabler:playlist" v-if="infoDisplayMode === 'lyric'"/>
-                    <Icon icon="material-symbols:line-weight" v-else/>
+                    <Icon icon="tabler:playlist" v-if="infoDisplayMode === 'lyric'" />
+                    <Icon icon="material-symbols:line-weight" v-else />
                 </button>
             </div>
         </div>
 
         <div class="lyric">
-            <Lyric v-if="infoDisplayMode === 'lyric'"></Lyric>
+            <Lyric v-if="infoDisplayMode === 'lyric' && playingLyric" :key="onplay?.song.id" :lyric="playingLyric">
+            </Lyric>
             <PlaylistView v-if="infoDisplayMode === 'list'"></PlaylistView>
         </div>
 
@@ -91,7 +92,7 @@ import DropShadowImg from '../DropShadowImg.vue';
 import PlaylistView from './PlaylistView.vue';
 
 const vueInstance = getCurrentInstance()
-const player = vueInstance?.appContext.config.globalProperties.$player
+const player = window.$player
 
 const appStore = useAppStore()
 const playerStore = usePlayerStore()
@@ -101,6 +102,7 @@ const onplay = computed(() => {
 const audioState = computed(() => {
     return playerStore.audioState
 })
+const playingLyric = computed(() => playerStore.lyric)
 
 const audioProgress = computed<number>({
     get: () => {
@@ -138,9 +140,9 @@ onMounted(() => {
                 let img: null | HTMLImageElement = new Image()
                 img.crossOrigin = 'anonymous'
                 const url = newValue?.song.cover
-                img.src = vueInstance?.appContext.config.globalProperties.$imgrsz(url, 200) || url
+                if (!url) { return }
+                img.src = vueInstance?.appContext.config.globalProperties.$imgrsz(url as string, 200) || url
                 img.onload = (e) => {
-
                     const colors = colorThief.getPalette(e.target as HTMLImageElement, 10, 5)
                     let matchColor = [255, 255, 255];
                     const suitableColor = colors.find(rgbArr => {
@@ -150,7 +152,6 @@ onMounted(() => {
                     if (suitableColor) {
                         matchColor = suitableColor;
                     }
-
                     const [r, g, b] = matchColor
                     dynamicBackground?.setColors(matchColor)
                     backdropBaseColor.value = [r, g, b]
@@ -172,11 +173,11 @@ onUnmounted(() => {
     window.gc()
 })
 
-function switchDisplayMode(){
-    if(infoDisplayMode.value === 'list'){
+function switchDisplayMode() {
+    if (infoDisplayMode.value === 'list') {
         infoDisplayMode.value = 'lyric'
     }
-    else{
+    else {
         infoDisplayMode.value = 'list'
     }
 }
@@ -272,7 +273,7 @@ function switchDisplayMode(){
     overflow-y: hidden;
     margin-left: auto;
     z-index: 1200;
-     overscroll-behavior: none;
+    overscroll-behavior: none;
 }
 
 .song {
@@ -384,7 +385,7 @@ function switchDisplayMode(){
             font-size: 0.82rem;
         }
 
-        .quality{
+        .quality {
             font-size: 0.8rem;
             background: rgba(255, 255, 255, 0.1);
             box-sizing: border-box;
