@@ -170,7 +170,7 @@ onUnmounted(() => {
         dynamicBackground.unmount()
         dynamicBackground = null
     }
-    window.gc()
+    // window.gc()
 })
 
 function switchDisplayMode() {
