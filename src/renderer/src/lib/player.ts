@@ -18,6 +18,7 @@ export class Player {
     constructor(waudio?: WAudio) {
         this.waudio = waudio || new WAudio()
         this.addListener()
+        this.addPlayerControlListener()
         this.addOSCListener()
         if (this.playerStore.onplay?.trackId) {
             this.playingId = this.playerStore.onplay?.trackId
@@ -55,6 +56,46 @@ export class Player {
         })
     }
 
+    private addPlayerControlListener(){
+        window.electron.ipcRenderer.on('control:playerPause',()=>{
+            this.control.pause()
+        })
+        window.electron.ipcRenderer.on('control:playerPlay', () => {
+            this.control.play()
+        })
+        window.electron.ipcRenderer.on('control:playerNext', () => {
+            this.next()
+        })
+        window.electron.ipcRenderer.on('control:playerPrevious', () => {
+            this.previous()
+        })
+        window.electron.ipcRenderer.on('control:playerToggle', () => {
+            this.control.togglePlayPause()
+        })
+        window.electron.ipcRenderer.on('control:playMode', (_, playMode:AppTypes.PlayMode) => {
+            this.playerStore.setPlayMode(playMode)
+        })
+        window.electron.ipcRenderer.on('control:playModeSwitch', () => {
+            this.playerStore.switchPlaymode()
+        })
+        window.electron.ipcRenderer.on('control:playerPlayTrack', (_, track:AppTypes.ITrackId) => {
+            this.playTrack(track)
+        })
+        window.electron.ipcRenderer.on('control:playerSetVolume',(_,volume:number)=>{
+            const v = clamp(volume, 0, 1)
+            this.control.volume(v)
+        })
+        window.electron.ipcRenderer.on('control:playerSeek', (_, seek: number) => {
+            const seekTime = Number(seek)
+            if (seekTime && Number.isSafeInteger(seekTime)) {
+                this.control.seek(seekTime)
+            }
+        })
+    }
+
+    /**
+     * @deprecated
+     */
     private addOSCListener() {
         window.electron.ipcRenderer.on('osc:playerPause', () => {
             this.control.pause()

@@ -5,6 +5,7 @@ import { AppTypes } from 'src/types/app'
 import ImportBiliMusic from './ImportBiliMusic.vue'
 import ContextMenu from "./ContextMenu.vue";
 import Equalizer from './Equalizer.vue'
+import CreateDevProject from './CreateDevProject.vue'
 interface ContextMenuItems {
   label?: string,
   icon?: string,
@@ -136,6 +137,21 @@ export default abstract class FunctionalWindows {
     const container = document.createElement('div')
     return new Promise<string>((resolve, reject) => {
       const app = createApp(Equalizer, {
+        onClose: () => {
+          app.unmount()
+          container.remove()
+          reject('canceled')
+        }
+      })
+      document.body.appendChild(container)
+      app.mount(container)
+    })
+  }
+
+  public static showMiniplayerProjectCreator() {
+    const container = document.createElement('div')
+    return new Promise<string>((resolve, reject) => {
+      const app = createApp(CreateDevProject, {
         onClose: () => {
           app.unmount()
           container.remove()

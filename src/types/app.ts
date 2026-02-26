@@ -7,6 +7,7 @@ export namespace AppTypes {
         | OfflinePlatform
 
     export type SearchAccuracyType = 'song' | 'playlist' | 'album' | 'artist' | 'user' | 'mv' | 'lyric' 
+    export type PlayMode = 'list'| 'listloop'| 'shuffle'| 'loop'
 
     export interface DefaultTransData {
         audioMute: boolean,
@@ -21,8 +22,6 @@ export namespace AppTypes {
         audioSeek: number,
         audioUserRequestPause: boolean,
         audioUserRequestPlay: boolean
-
-
         playingTrackUpdate: AppTypes.ISongTrack,
         playingSongUpdate: AppTypes.ISong,
         playingTrackIdUpdate: AppTypes.ITrackId,
@@ -32,18 +31,26 @@ export namespace AppTypes {
         playerPlaylistUpdate: AppTypes.ITrackId[],
         playerNextSong: [AppTypes.ITrackId, number],
         playerPreviousSong: [AppTypes.ITrackId, number],
-
         appMusicplayerOpen: boolean,
         appMusicplayerClose: boolean,
         appRouterUpdate: { from: string, to: string },
-
         appRenderReady: null,
         appRenderMount: null,
-
-
-
         appThemeUpdate: [string],
         playerEqualizerUpdate: number[]
+    }
+
+    export interface AppControlEvents {
+        playerPause:[],
+        playerPlay:[],
+        playerNext:[],
+        playerPrevious:[],
+        playerToggle:[],
+        playMode:[playMode:AppTypes.PlayMode],
+        playModeSwitch:[],
+        playerPlayTrack:[track:AppTypes.ITrackId],
+        playerVolume:[volume:number],
+        playerSeek:[seek:number]
     }
 
     export interface IBiliTrackId {
