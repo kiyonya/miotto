@@ -16,6 +16,8 @@ const emits = defineEmits<{
 }>()
 
 
+
+
 const waveCanvas = ref<HTMLCanvasElement | null>(null)
 let waveDrawer:WaveDrawer | null = null
 const audioPlayURL = ref<string>('')
