@@ -27,7 +27,6 @@
     "@modelcontextprotocol/sdk": "^1.26.0",
     "NeteaseCloudMusicApi": "^4.28.1",
     "axios": "^1.13.4",
-    "better-sqlite3": "^12.6.2",
     "colorthief": "^2.6.0",
     "dexie": "^4.3.0",
     "electron-store": "^11.0.2",
