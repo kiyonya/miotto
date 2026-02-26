@@ -9,6 +9,7 @@
             </form>
             <button><Icon icon="fluent:search-20-filled" /></button>
             <button @click="showAudioRecognize"><Icon icon="fluent:fingerprint-20-regular" /></button>
+            <button @click="openMiniProject"><Icon icon="fluent:animal-cat-16-regular" /></button>
         </div>
         <div class="system">
             <button @click.stop="configStore.toggleAppTheme">
@@ -33,6 +34,7 @@ import useConfigStore from '@renderer/store/config';
 import { computed, ref } from 'vue';
 import SearchMatch from './SearchMatch.vue';
 import AudioRcg from './audiomatch/AudioRcg.vue';
+import FunctionalWindows from './windows';
 const configStore = useConfigStore()
 const theme = computed(()=>configStore.appTheme)
 const showSearchMatchTab = ref<boolean>(false)
@@ -62,6 +64,9 @@ function handleSearchTabClose(){
 }
 function showAudioRecognize(){
     showAudioRcg.value = !showAudioRcg.value
+}
+function openMiniProject(){
+    FunctionalWindows.showMiniplayerProjectCreator()
 }
 </script>
 <style scoped>
