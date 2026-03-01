@@ -9,10 +9,10 @@ const useAppStore = defineStore('app', {
         toggleShowMusicPlayer() {
             this.showMusicPlayer = !this.showMusicPlayer
             if (this.showMusicPlayer) {
-                window.transapi.toEmit('appMusicplayerOpen', true)
+                window.emitter.post('appMusicplayerOpen', true)
             }
             else {
-                window.transapi.toEmit('appMusicplayerClose', true)
+                window.emitter.post('appMusicplayerClose', true)
             }
         },
         openSidePlaylist() {

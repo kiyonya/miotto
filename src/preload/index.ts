@@ -1,19 +1,17 @@
 import { contextBridge, ipcRenderer, webFrame } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import { AppTypes } from '../types/app'
-import { AppAPI, AudioStateTrans, BiliAPI, CacheAPI, LocalAPI, MediaAPI, NCMAPI, OrpheusAPI, TransAPI } from './apitype'
+import { AppAPI } from '../types/api'
+import { AppEvents } from '../types/event'
 
-const api = {
-}
-
-const appapi: AppAPI = {
+const appapi: AppAPI.APP = {
   showOpenDialog: (options?: Electron.OpenDialogOptions) => ipcRenderer.invoke('app:showOpenDialog', options),
   minimize: () => ipcRenderer.invoke('app:minimize'),
   maximize: () => ipcRenderer.invoke('app:maximize'),
   close: () => ipcRenderer.invoke('app:close')
 }
 
-const ncmapi: NCMAPI = {
+const ncmapi: AppAPI.NCM = {
   loginQrKey: () => ipcRenderer.invoke('ncmapi:loginQrKey'),
   loginQrCreate: (unikey: string, qrimg: boolean = true) => ipcRenderer.invoke('ncmapi:loginQrCreate', unikey, qrimg),
   loginQrCheck: (unikey: string) => ipcRenderer.invoke('ncmapi:loginQrCheck', unikey),
@@ -31,58 +29,61 @@ const ncmapi: NCMAPI = {
   recommendHomepage: (block?: AppTypes.NCMTypes.HomePageBlockCodeOrder[] | AppTypes.NCMTypes.HomePageBlockCodeOrder, refresh?: boolean) => ipcRenderer.invoke('ncmapi:recommendHomepage', block, refresh),
   recommendPlaylists: () => ipcRenderer.invoke('ncmapi:recommendPlaylists'),
   recommendStyleSongs: (refresh?: boolean, cache?: boolean) => ipcRenderer.invoke('ncmapi:recommendStyleSongs', refresh, cache),
-  searchSuggest:(keyword:string)=>ipcRenderer.invoke('ncmapi:searchSuggest',keyword),
-  searchMatchSuggestKeywords:(keyword:string)=>ipcRenderer.invoke('ncmapi:searchMatchSuggestKeywords',keyword),
-  searchResultComplex:(keyword:string)=>ipcRenderer.invoke('ncmapi:searchResultComplex',keyword),
-  audioFingerprintMatch:(afp:string,duration:number = 3)=>ipcRenderer.invoke('ncmapi:audioFingerprintMatch',afp,duration)
+  searchSuggest: (keyword: string) => ipcRenderer.invoke('ncmapi:searchSuggest', keyword),
+  searchMatchSuggestKeywords: (keyword: string) => ipcRenderer.invoke('ncmapi:searchMatchSuggestKeywords', keyword),
+  searchResultComplex: (keyword: string) => ipcRenderer.invoke('ncmapi:searchResultComplex', keyword),
+  audioFingerprintMatch: (afp: string, duration: number = 3) => ipcRenderer.invoke('ncmapi:audioFingerprintMatch', afp, duration)
 }
 
-const biliapi: BiliAPI = {
+const biliapi: AppAPI.Bili = {
   songDetail: (bvid: string) => ipcRenderer.invoke('biliapi:songDetail', bvid),
   bvAudioTrack: (bvid: string, cid: number) => ipcRenderer.invoke('biliapi:bvAudioTrack', bvid, cid)
 }
 
-const localapi: LocalAPI = {
+const localapi: AppAPI.Local = {
   readAudioFile: (file: string) => ipcRenderer.invoke('localapi:readAudioFile', file),
   batchGetLocalSong: (files: string[]) => ipcRenderer.invoke('localapi:batchGetLocalSong', files),
   getLocalTrack: (f: string) => ipcRenderer.invoke('localapi:getLocalTrack', f)
 }
 
-const cacheapi: CacheAPI = {
+const cacheapi: AppAPI.Cache = {
   getAudioCacheDir: () => ipcRenderer.invoke('cache:getAudioCacheDir'),
   cacheTrack: (key: string, track: AppTypes.ISongTrack) => ipcRenderer.invoke('cache:cacheTrack', key, track),
   getTrackCache: (key: string) => ipcRenderer.invoke('cache:getTrackCache', key)
 }
 
-const orpheusapi: OrpheusAPI = {
+const orpheusapi: AppAPI.Orpheus = {
   playPlaylist: (id: number) => ipcRenderer.invoke('orpheus:playPlaylist', id),
   playSong: (id: number) => ipcRenderer.invoke('orpheus:playSong', id)
 }
 
-const transapi: TransAPI = {
-  set: <K extends keyof AppTypes.DefaultTransData>(key: K, value: AppTypes.DefaultTransData[K], store?: boolean) => ipcRenderer.invoke('trans:set', key, value, store),
-  get: <K extends keyof AppTypes.DefaultTransData>(key: K) => ipcRenderer.invoke('trans:get', key),
-  update: <K extends keyof AppTypes.DefaultTransData>(key: K, newVal:Partial<AppTypes.DefaultTransData[K]>) => ipcRenderer.invoke('trans:update', key, newVal),
-  delete: <K extends keyof AppTypes.DefaultTransData>(key: K) => ipcRenderer.invoke('trans:update', key),
-  toEmit:<K extends keyof AppTypes.DefaultTransData>(key: K, value: AppTypes.DefaultTransData[K]) =>ipcRenderer.invoke('trans:toEmit',key,value)
+const mediaapi: AppAPI.Media = {
+  desktopCapture: (config: Electron.SourcesOptions) => ipcRenderer.invoke('media:desktopCapture', config)
 }
 
-const mediaapi:MediaAPI = {
-  desktopCapture:(config:Electron.SourcesOptions)=>ipcRenderer.invoke('media:desktopCapture',config)
+const emitter: AppAPI.Emitter = {
+  set: (key, ...args) => ipcRenderer.invoke('emitter:set', key, ...args),
+  post: (key, ...args) => ipcRenderer.invoke('emitter:post', key, ...args),
+  setPost: (key, ...args) => ipcRenderer.invoke('emitter:setPost', key, ...args),
+  postToGroup: (gid: string, key, ...args) => ipcRenderer.invoke('emitter:postToGroup', gid, key, ...args),
+  setPostToGroup: (gid: string, key, ...args) => ipcRenderer.invoke('emitter:setPostToGroup', gid, key, ...args),
+  get: (key) => ipcRenderer.invoke('emitter:get', key),
+  delete: (key) => ipcRenderer.invoke('emitter:delete', key),
+  repostAllEvent: () => ipcRenderer.invoke('emitter:repostAllEvent'),
+  repostGroupEvent: (gid: string) => ipcRenderer.invoke('emitter:repostGroupEvent', gid),
 }
 
 if (process.contextIsolated) {
   try {
     contextBridge.exposeInMainWorld('electron', electronAPI)
-    contextBridge.exposeInMainWorld('api', api)
     contextBridge.exposeInMainWorld('appapi', appapi)
     contextBridge.exposeInMainWorld('ncmapi', ncmapi)
     contextBridge.exposeInMainWorld('biliapi', biliapi)
     contextBridge.exposeInMainWorld('localapi', localapi)
     contextBridge.exposeInMainWorld('cacheapi', cacheapi)
     contextBridge.exposeInMainWorld('orpheusapi', orpheusapi)
-    contextBridge.exposeInMainWorld('transapi', transapi)
-    contextBridge.exposeInMainWorld('mediaapi',mediaapi)
+    contextBridge.exposeInMainWorld('emitter', emitter)
+    contextBridge.exposeInMainWorld('mediaapi', mediaapi)
     contextBridge.exposeInMainWorld('clearCache', webFrame.clearCache)
   } catch (error) {
     console.error(error)
@@ -91,7 +92,6 @@ if (process.contextIsolated) {
   // @ts-ignore (define in dts)
   window.electron = electronAPI
   // @ts-ignore (define in dts)
-  window.api = api
   // @ts-ignore (define in dts)
   window.appapi = appapi
   // @ts-ignore (define in dts)
@@ -105,7 +105,7 @@ if (process.contextIsolated) {
   // @ts-ignore (define in dts)
   window.orpheusapi = orpheusapi
   // @ts-ignore (define in dts)
-  window.transapi = transapi
+  window.emitter = emitter
   // @ts-ignore (define in dts)
   window.mediaapi = mediaapi
   // @ts-ignore (define in dts)

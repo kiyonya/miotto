@@ -6,8 +6,8 @@ export namespace AppTypes {
     export type AllPlatform = OnlinePlatform
         | OfflinePlatform
 
-    export type SearchAccuracyType = 'song' | 'playlist' | 'album' | 'artist' | 'user' | 'mv' | 'lyric' 
-    export type PlayMode = 'list'| 'listloop'| 'shuffle'| 'loop'
+    export type SearchAccuracyType = 'song' | 'playlist' | 'album' | 'artist' | 'user' | 'mv' | 'lyric'
+    export type PlayMode = 'list' | 'listloop' | 'shuffle' | 'loop'
 
     export interface DefaultTransData {
         audioMute: boolean,
@@ -40,17 +40,48 @@ export namespace AppTypes {
         playerEqualizerUpdate: number[]
     }
 
+    export interface AppEvents {
+        audioMute:boolean
+        audioVolumeChange: [volume: number],
+        audioTimeUpdate: [currentTime: number],
+        audioCanplay: [canPlay: boolean],
+        audioEnd: boolean,
+        audioDuration: [duration: number],
+        audioPlaystateUpdate: boolean,
+        audioPause: boolean,
+        audioPlay: boolean,
+        audioSeek: [seekTime: number],
+        audioUserRequestPause: boolean,
+        audioUserRequestPlay: boolean
+        playingTrackUpdate: [track: AppTypes.ISongTrack],
+        playingSongUpdate: [song: AppTypes.ISong],
+        playingTrackIdUpdate: [trackId: AppTypes.ITrackId],
+        playerPlaySong: [trackId: AppTypes.ITrackId],
+        playingLyricUpdate: [lyric: AppTypes.ILyric],
+        playerPlaymodeUpdate: [playMode: 'shuffle' | 'list' | 'loop' | 'listloop'],
+        playerPlaylistUpdate: [playlist: AppTypes.ITrackId[]],
+        playerNextSong: [trackId: AppTypes.ITrackId, index: number],
+        playerPreviousSong: [trackId: AppTypes.ITrackId, index: number],
+        appMusicplayerOpen: [isOpen: boolean],
+        appMusicplayerClose: [isClose: boolean],
+        appRouterUpdate: [route: { from: string, to: string }],
+        appRenderReady: null,
+        appRenderMount: null,
+        appThemeUpdate: [theme: string],
+        playerEqualizerUpdate: [f: number[]]
+    }
+
     export interface AppControlEvents {
-        playerPause:[],
-        playerPlay:[],
-        playerNext:[],
-        playerPrevious:[],
-        playerToggle:[],
-        playMode:[playMode:AppTypes.PlayMode],
-        playModeSwitch:[],
-        playerPlayTrack:[track:AppTypes.ITrackId],
-        playerVolume:[volume:number],
-        playerSeek:[seek:number]
+        playerPause: [],
+        playerPlay: [],
+        playerNext: [],
+        playerPrevious: [],
+        playerToggle: [],
+        playMode: [playMode: AppTypes.PlayMode],
+        playModeSwitch: [],
+        playerPlayTrack: [track: AppTypes.ITrackId],
+        playerVolume: [volume: number],
+        playerSeek: [seek: number],
     }
 
     export interface IBiliTrackId {
@@ -74,7 +105,7 @@ export namespace AppTypes {
         tns: string[],
         alias: string[],
         platform: 'ncm' | 'bili' | 'unk',
-        avatar?:string
+        avatar?: string
     }
 
     export interface IArtist {
@@ -96,7 +127,7 @@ export namespace AppTypes {
         name: string,
         cover: string,
         tns: string[],
-        publishTime?:number
+        publishTime?: number
     }
 
     export interface IAlbum {
@@ -316,10 +347,10 @@ export namespace AppTypes {
     }
 
     export interface ISearchComplex {
-        songs:ISong[],
-            playlists:IPlaylistBrief[],
-            albums:IAlbumBrief[],
-            artists:IArtistBrief[]
+        songs: ISong[],
+        playlists: IPlaylistBrief[],
+        albums: IAlbumBrief[],
+        artists: IArtistBrief[]
     }
 }
 

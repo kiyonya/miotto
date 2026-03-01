@@ -19,9 +19,9 @@ export class Player {
         this.waudio = waudio || new WAudio()
         this.addListener()
         this.addPlayerControlListener()
-        this.addOSCListener()
         if (this.playerStore.onplay?.trackId) {
             this.playingId = this.playerStore.onplay?.trackId
+            this.playTrack(this.playingId,this.configStore.autoplayWhenAppStart)
         }
         this.addSystemMediaSessionListener()
         this.startWatcher()
@@ -30,34 +30,34 @@ export class Player {
     private addListener() {
         this.waudio.on('play', () => {
             this.playerStore.updatePlayState(true)
-            window.transapi.set('audioPlaystateUpdate', true)
-            window.transapi.toEmit('audioPlay', true)
+            window.emitter.setPost('audioPlaystateUpdate', true)
+            window.emitter.post('audioPlay', true)
             this.isPlaying = true
         })
         this.waudio.on('pause', () => {
             this.playerStore.updatePlayState(false)
-            window.transapi.set('audioPlaystateUpdate', false)
-            window.transapi.toEmit('audioPause', true)
+            window.emitter.setPost('audioPlaystateUpdate', false)
+            window.emitter.post('audioPause', true)
             this.isPlaying = false
         })
         this.waudio.on('timeupdate', (ct: number) => {
             this.playerStore.updateCurrentTime(ct)
-            window.transapi.set('audioTimeUpdate', ct)
+            window.emitter.setPost('audioTimeUpdate', ct)
             this.updateSystemMediaSessionPlayState()
         })
         this.waudio.on('canplay', (dt: number) => {
             this.playerStore.updateDuration(dt)
-            window.transapi.set('audioDuration', dt)
-            window.transapi.toEmit('audioCanplay', true)
+            window.emitter.setPost('audioDuration', dt)
+            window.emitter.post('audioCanplay', true)
         })
         this.waudio.on('end', this.handleAudioEnd.bind(this))
         this.waudio.on('volumechange', (volume: number) => {
-            window.transapi.set('audioVolumeChange', volume)
+            window.emitter.setPost('audioVolumeChange', volume)
         })
     }
 
-    private addPlayerControlListener(){
-        window.electron.ipcRenderer.on('control:playerPause',()=>{
+    private addPlayerControlListener() {
+        window.electron.ipcRenderer.on('control:playerPause', () => {
             this.control.pause()
         })
         window.electron.ipcRenderer.on('control:playerPlay', () => {
@@ -72,82 +72,20 @@ export class Player {
         window.electron.ipcRenderer.on('control:playerToggle', () => {
             this.control.togglePlayPause()
         })
-        window.electron.ipcRenderer.on('control:playMode', (_, playMode:AppTypes.PlayMode) => {
+        window.electron.ipcRenderer.on('control:playMode', (_, playMode: AppTypes.PlayMode) => {
             this.playerStore.setPlayMode(playMode)
         })
         window.electron.ipcRenderer.on('control:playModeSwitch', () => {
             this.playerStore.switchPlaymode()
         })
-        window.electron.ipcRenderer.on('control:playerPlayTrack', (_, track:AppTypes.ITrackId) => {
+        window.electron.ipcRenderer.on('control:playerPlayTrack', (_, track: AppTypes.ITrackId) => {
             this.playTrack(track)
         })
-        window.electron.ipcRenderer.on('control:playerSetVolume',(_,volume:number)=>{
+        window.electron.ipcRenderer.on('control:playerSetVolume', (_, volume: number) => {
             const v = clamp(volume, 0, 1)
             this.control.volume(v)
         })
         window.electron.ipcRenderer.on('control:playerSeek', (_, seek: number) => {
-            const seekTime = Number(seek)
-            if (seekTime && Number.isSafeInteger(seekTime)) {
-                this.control.seek(seekTime)
-            }
-        })
-    }
-
-    /**
-     * @deprecated
-     */
-    private addOSCListener() {
-        window.electron.ipcRenderer.on('osc:playerPause', () => {
-            this.control.pause()
-        })
-        window.electron.ipcRenderer.on('osc:playerPlay', () => {
-            this.control.play()
-        })
-        window.electron.ipcRenderer.on('osc:playerNext', () => {
-            this.next()
-        })
-        window.electron.ipcRenderer.on('osc:playerPrevious', () => {
-            this.previous()
-        })
-        window.electron.ipcRenderer.on('osc:playerToggle', () => {
-            this.control.togglePlayPause()
-        })
-        window.electron.ipcRenderer.on('osc:playMode', (_, playMode) => {
-            const playModeStr = String(playMode)
-            if (['list', 'listloop', 'shuffle', 'loop'].includes(playModeStr)) {
-                this.playerStore.setPlayMode(playModeStr as any)
-            }
-        })
-        window.electron.ipcRenderer.on('osc:playModeSwitch', () => {
-            this.playerStore.switchPlaymode()
-        })
-        window.electron.ipcRenderer.on('osc:playerPlayTrack', (_, trackB64: string) => {
-            if (typeof trackB64 === 'string') {
-                try {
-                    const decodeItrack = atob(trackB64)
-                    const itrack = JSON.parse(decodeItrack) as AppTypes.ITrackId
-                    if (itrack && itrack.id && ['ncm', 'bili', 'local'].includes(itrack.platform)) {
-                        if (itrack.platform === 'local' && itrack.file) {
-                            this.playTrack(itrack)
-                        }
-                        else {
-                            this.playTrack(itrack)
-                        }
-                    }
-                } catch (error) {
-                    console.error(error)
-                }
-
-            }
-        })
-        window.electron.ipcRenderer.on('osc:playerVolume', (_, volume: string | number) => {
-            const vol = Number(volume)
-            if (vol && Number.isSafeInteger(vol)) {
-                const v = clamp(vol, 0, 1)
-                this.control.volume(v)
-            }
-        })
-        window.electron.ipcRenderer.on('osc:playerSeek', (_, seek: string | number) => {
             const seekTime = Number(seek)
             if (seekTime && Number.isSafeInteger(seekTime)) {
                 this.control.seek(seekTime)
@@ -185,7 +123,7 @@ export class Player {
 
     private handleAudioEnd() {
         const playMode = this.playerStore.player.playMode
-        window.transapi.toEmit('audioEnd', true)
+        window.emitter.post('audioEnd', true)
         if (playMode === 'loop') {
             this.waudio.seek(0)
             return
@@ -198,15 +136,15 @@ export class Player {
     public control = {
         play: () => {
             this.waudio.play()
-            window.transapi.toEmit('audioUserRequestPlay', true)
+            window.emitter.post('audioUserRequestPlay', true)
         },
         pause: () => {
             this.waudio.pause()
-            window.transapi.toEmit('audioUserRequestPause', true)
+            window.emitter.post('audioUserRequestPause', true)
         },
         seek: (time: number) => {
             this.waudio.seek(time)
-            window.transapi.toEmit('audioSeek', time)
+            window.emitter.post('audioSeek', time)
         },
         togglePlayPause: () => {
             if (this.isPlaying) { this.waudio.pause() }
@@ -237,7 +175,7 @@ export class Player {
         }
         const nextTrackId = this.list[nextIndex]
 
-        window.transapi.toEmit('playerNextSong', [this._noProxy(nextTrackId), nextIndex])
+        window.emitter.post('playerNextSong', this._noProxy(nextTrackId), nextIndex)
 
 
         this.playTrack(nextTrackId)
@@ -256,32 +194,33 @@ export class Player {
         }
         const preTrackId = this.list[preIndex]
 
-        window.transapi.toEmit('playerPreviousSong', [this._noProxy(preTrackId), preIndex])
+        window.emitter.post('playerPreviousSong', this._noProxy(preTrackId), preIndex)
 
         this.playTrack(preTrackId)
     }
 
-    public playTrack(trackId: AppTypes.ITrackId) {
+    public async playTrack(trackId: AppTypes.ITrackId, autoPlay: boolean = true) {
         this.playingId = trackId
 
-        window.transapi.toEmit('playerPlaySong', this._noProxy(trackId))
+        window.emitter.post('playerPlaySong', this._noProxy(trackId))
 
         if (trackId.platform === 'ncm') {
-            this.playNcmTrack(trackId)
+            await this.playNcmTrack(trackId, autoPlay)
         }
         else if (trackId.platform === 'bili') {
-            this.playBiliTrack(trackId)
+            await this.playBiliTrack(trackId, autoPlay)
         }
         else if (trackId.platform === 'local') {
-            this.playLocalTrack(trackId)
+            await this.playLocalTrack(trackId, autoPlay)
         }
+        
     }
 
-    private async playNcmTrack(trackId: AppTypes.ITrackId) {
+    private async playNcmTrack(trackId: AppTypes.ITrackId, autoPlay: boolean = true) {
         const ncmid = trackId.id as unknown as number
         const track = await this.getSourceFromNCM(ncmid)
         track.url = track.url.replaceAll('http://', 'https://')
-        await this.waudio.loadSrc(track.url, true)
+        await this.waudio.loadSrc(track.url, autoPlay)
         const detail = await window.ncmapi.songDetail(ncmid, true)
         const lyric = await window.ncmapi.songLyric(ncmid)
 
@@ -290,11 +229,11 @@ export class Player {
         this.playerStore.setLyric(lyric)
     }
 
-    private async playBiliTrack(trackId: AppTypes.IBiliTrackId) {
+    private async playBiliTrack(trackId: AppTypes.IBiliTrackId, autoPlay: boolean = true) {
         const bvid = trackId.id
         const detail = await window.biliapi.songDetail(bvid)
         const track = await this.getSourceFromBili(bvid, detail.bilicid)
-        await this.waudio.loadSrc(track.url, true)
+        await this.waudio.loadSrc(track.url, autoPlay)
 
         this.updateSystemMediaSession(detail)
         this.playerStore.setOnPlayTrack(track, detail, trackId)
@@ -304,10 +243,10 @@ export class Player {
         })
     }
 
-    private async playLocalTrack(localId: AppTypes.ILocalTrackId) {
+    private async playLocalTrack(localId: AppTypes.ILocalTrackId, autoPlay: boolean = true) {
         const lid = localId.id
         const file = localId.file
-        await this.waudio.loadSrc(file)
+        await this.waudio.loadSrc(file, autoPlay)
         let detail: AppTypes.ISong = await this.playlistStore.getSong(lid)
         if (detail.type === 'local') {
             if (this.configStore.useNcmSongInfoForMatchedLocalMusic && detail.ncmMatchId) {

@@ -105,3 +105,4 @@ export interface MediaAPI {
 }
 
 export type TransEventType = keyof TransData
+

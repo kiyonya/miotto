@@ -8,11 +8,11 @@ import { localAPI } from './ipc/localapi'
 import { appIpc } from './ipc/app'
 import { CacheIPC } from './ipc/cache'
 import { ncmOrpheus } from './ipc/orpheus'
-import { DataTransport } from './ipc/transport'
+import { DataTransport } from './ipc/emitter'
 import { OSCIPC } from './ipc/osc'
 import { MediaIpc } from './ipc/media'
 import { pluginIPC } from './ipc/plugin'
-import { windowManager } from './window'
+import { windowManager } from './utils/window'
 import { controlIPC } from './ipc/control'
 
 function startAPP(){
@@ -45,7 +45,7 @@ function startAPP(){
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
   appIpc(mainWindow)
-  OSCIPC(mainWindow)
+  
 }
 
 app.whenReady().then(() => {
@@ -56,6 +56,7 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
+  OSCIPC()
   registerNCMApiIPC()
   biliApi()
   localAPI()

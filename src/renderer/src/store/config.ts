@@ -12,7 +12,9 @@ interface ConfigState {
     enableEqualizer:boolean,
     equalizerFrequencies: number[], 
     equalizerGains: number[], 
-    equalizerQuality: number
+    equalizerQuality: number,
+
+    autoplayWhenAppStart:boolean
 }
 
 const useConfigStore = defineStore('config', {
@@ -26,7 +28,8 @@ const useConfigStore = defineStore('config', {
         equalizerFrequencies:[32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000],
         equalizerGains:new Array(10).fill(0),
         equalizerQuality:3,
-        enableEqualizer:false
+        enableEqualizer:false,
+        autoplayWhenAppStart:false
     }),
     actions:{
         toggleAppTheme(){
@@ -36,6 +39,7 @@ const useConfigStore = defineStore('config', {
             else{
                 this.appTheme = 'light'
             }
+            window.emitter.setPost('appThemeUpdate',this.appTheme)
             document.querySelector('html')?.setAttribute('data-theme', this.appTheme)
         },
         switchEnableEqualizer(){
@@ -49,6 +53,7 @@ const useConfigStore = defineStore('config', {
         afterHydrate: () => {
             const configStore = useConfigStore()
             if (configStore.appTheme) {
+                 window.emitter.setPost('appThemeUpdate',configStore.appTheme)
                 document.querySelector('html')?.setAttribute('data-theme', configStore.appTheme)
             }
 

@@ -1,41 +1,41 @@
 import { ipcMain } from "electron"
-import { windowManager } from "../window"
+import { windowManager } from "../utils/window"
 import { AppTypes } from "../../types/app"
-import { AppProcessController } from "../service/controller"
+import { PlayerController } from "../utils/player-controller"
 
 export function controlIPC() {
 
     const mainWindow = windowManager.getWindow('main')
     if (mainWindow) {
         ipcMain.handle('control:playerPause', () => {
-            AppProcessController.pause()
+            PlayerController.pause()
         })
         ipcMain.handle('control:playerPlay', () => {
-            AppProcessController.play()
+            PlayerController.play()
         })
         ipcMain.handle('control:playerNext', () => {
-            AppProcessController.next()
+            PlayerController.next()
         })
         ipcMain.handle('control:playerPrevious', () => {
-            AppProcessController.previous()
+            PlayerController.previous()
         })
         ipcMain.handle('control:playerToggle', () => {
-            AppProcessController.togglePlay()
+            PlayerController.togglePlay()
         })
         ipcMain.handle('control:playerSeek', (_, time: number) => {
-            AppProcessController.seek(time)
+            PlayerController.seek(time)
         })
         ipcMain.handle('control:playerSetVolume', (_, volume: number) => {
-            AppProcessController.setVolume(volume)
+            PlayerController.setVolume(volume)
         })
         ipcMain.handle('control:playMode', (_, mode: AppTypes.PlayMode) => {
-            AppProcessController.setPlayMode(mode)
+            PlayerController.setPlayMode(mode)
         })
         ipcMain.handle('control:playModeSwitch', () => {
-            AppProcessController.switchPlayMode()
+            PlayerController.switchPlayMode()
         })
         ipcMain.handle('control:playerPlayTrack', (_, track: AppTypes.ITrackId) => {
-            AppProcessController.playTrack(track)
+            PlayerController.playTrack(track)
         })
     }
 }

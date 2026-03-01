@@ -1,12 +1,16 @@
 import Store from 'electron-store'
 
 export interface ConfigStore {
-    enableOSC:boolean
+    enableOSC:boolean,
+    oscServerPort:number,
+    oscClientPort:number
 }
 
 const configStore = new Store<ConfigStore>({
     defaults:{
-        enableOSC:true
+        enableOSC:true,
+        oscServerPort:15000,
+        oscClientPort:15001
     }  
 })
 

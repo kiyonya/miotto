@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, session } from "electron";
+import { app, BrowserWindow, dialog, ipcMain} from "electron";
 
 export function appIpc(mainWindow:BrowserWindow){
     ipcMain.handle('app:showOpenDialog',async (_,options?:Electron.OpenDialogOptions)=>{

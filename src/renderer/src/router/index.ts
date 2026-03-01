@@ -45,7 +45,7 @@ const router = createRouter({
 })
 
 router.beforeEach((to,from,next)=>{
-    window.transapi.toEmit('appRouterUpdate',{from:from.fullPath,to:to.fullPath})
+    window.emitter.post('appRouterUpdate',{from:from.fullPath,to:to.fullPath})
     next()
 })
 

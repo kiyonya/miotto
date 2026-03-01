@@ -1,7 +1,7 @@
 
 import fse from 'fs-extra'
 import path from 'path'
-import { windowManager } from './window'
+import { windowManager } from './utils/window'
 import httpServer from 'http-server'
 import { Server } from 'http'
 
@@ -60,7 +60,9 @@ export async function runPluginProject(manifest: string, openOnDev: boolean = fa
         if (!manifestJSON.name || !manifestJSON.entry || !manifestJSON.version) {
             throw new Error('NO MANIFEST')
         }
-        const window = windowManager.createWindow(manifestJSON.name, {
+
+        const winId = `plugin_${crypto.randomUUID()}`
+        const window = windowManager.createWindow(winId, {
             width: manifestJSON.window?.width || 500,
             height: manifestJSON.window?.height || 250,
             x: manifestJSON.window?.x || undefined,
@@ -109,6 +111,9 @@ export async function runPluginProject(manifest: string, openOnDev: boolean = fa
             const entryPath = path.isAbsolute(manifestJSON.entry) ? manifestJSON.entry : path.join(path.dirname(manifest), manifestJSON.entry)
             await window.loadFile(entryPath)
         }
+
+        window.webContents.send('winId',winId)
+        return {window:window,winId:winId}
 
     } catch (error) {
         console.error('Failed to run plugin project:', error)

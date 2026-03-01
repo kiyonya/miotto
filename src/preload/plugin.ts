@@ -1,36 +1,12 @@
 
 import { contextBridge, ipcRenderer } from 'electron'
+import { AppTypes } from '../types/app'
 
-const ALLOWED_EVENTS = new Set<string>([
-    'ev:audioCanplay',
-    'ev:audioDuration',
-    'ev:audioEnd',
-    'ev:audioMute',
-    'ev:audioPause',
-    'ev:audioPlay',
-    'ev:audioPlaystateUpdate',
-    'ev:audioSeek',
-    'ev:audioTimeUpdate',
-    'ev:audioUserRequestPause',
-    'ev:audioUserRequestPlay',
-    'ev:audioVolumeChange',
-    'ev:playerNextSong',
-    'ev:playerPlaySong',
-    'ev:playerPlaylistUpdate',
-    'ev:playerPlaymodeUpdate',
-    'ev:playerPreviousSong',
-    'ev:playingLyricUpdate',
-    'ev:playingSongUpdate',
-    'ev:playingTrackIdUpdate',
-    'ev:playingTrackUpdate',
-    'ev:appThemeUpdate',
-    'ev:appRenderMount',
-    'ev:appRenderReady'
-])
+const pluginAvailbleEvents: (keyof AppTypes.AppEvents)[] = ['audioCanplay', 'audioDuration', 'audioEnd', 'audioMute', 'audioPause', 'audioPlay', 'audioPlaystateUpdate', 'audioSeek', 'audioTimeUpdate', 'audioUserRequestPause', 'audioUserRequestPlay', 'audioVolumeChange', 'playerNextSong', 'playerPlaySong', 'playerPlaylistUpdate', 'playerPlaymodeUpdate', 'playerPreviousSong', 'playingLyricUpdate', 'playingSongUpdate', 'playingTrackIdUpdate', 'playingTrackUpdate', 'appThemeUpdate', 'appRenderMount', 'appRenderReady']
 
+
+const ALLOWED_EVENTS = new Set<string>(pluginAvailbleEvents.map(k => `event:${k}`))
 const ALLOW_EMITS = new Set<string>([
-    'plugin:getAllData',
-    'plugin:getData',
     'control:playerPause',
     'control:playerPlay',
     'control:playerNext',
@@ -43,7 +19,39 @@ const ALLOW_EMITS = new Set<string>([
     'control:playerPlayTrack'
 ])
 
-const secureIpc = {
+let winId: string = sessionStorage.getItem('winId') || ''
+
+ipcRenderer.once('winId', (_, id) => {
+    winId = id
+    sessionStorage.setItem('winId', id)
+})
+
+const getWindowId = () => winId
+
+const syncEvents = async () => {
+    await ipcRenderer.invoke('plugin:repostWinEvents', winId)
+}
+const getWindowInfo = () => ipcRenderer.invoke('plugin:getWinInfo', winId)
+
+const whenReady = async (): Promise<string> => {
+    if (winId) { return winId }
+    else {
+        const w = await new Promise<string>((resolve, _) => {
+            const onWinId = (_, id) => {
+                ipcRenderer.off('winId', onWinId)
+                resolve(id)
+            }
+            ipcRenderer.on('winId', onWinId)
+        })
+        winId = w
+        sessionStorage.setItem('winId', winId)
+        return w
+    }
+}
+
+
+
+const port = {
     on: (channel: string, listener: (...args: any[]) => void) => {
         if (!ALLOWED_EVENTS.has(channel)) {
             return
@@ -100,11 +108,15 @@ const secureIpc = {
 
 if (process.contextIsolated) {
     try {
-        contextBridge.exposeInMainWorld('ipcRenderer', secureIpc)
+        contextBridge.exposeInMainWorld('port', port)
+        contextBridge.exposeInMainWorld('getWindowId', getWindowId)
+        contextBridge.exposeInMainWorld('syncEvents', syncEvents)
+        contextBridge.exposeInMainWorld('getWindowInfo', getWindowInfo)
+        contextBridge.exposeInMainWorld('whenReady', whenReady)
     } catch (error) {
         console.error(error)
     }
 } else {
     // @ts-ignore (define in dts)
-    window.ipc = secureIpc
+    window.port = port
 }

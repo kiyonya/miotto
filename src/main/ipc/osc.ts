@@ -1,25 +1,26 @@
-import { BrowserWindow, ipcMain } from "electron";
-import { disableOSC, enableOSC } from "../osc/oscserver";
+import { ipcMain } from "electron";
 import { configStore } from "../config";
+import { OSCProtocalService } from "../osc/osc";
 
-export function OSCIPC (mainWindow:BrowserWindow){
+export function OSCIPC (){
 
+    const oscService = new OSCProtocalService()
     if(configStore.get('enableOSC')){
         console.log('OSC服务已允许')
-        enableOSC(mainWindow)
+        oscService.startOSC()
     }
 
-    ipcMain.handle('osc:enableOSC',()=>{
+    ipcMain.handle('osc:enableOSC',async ()=>{
         configStore.set('enableOSC',true)
-        enableOSC(mainWindow)
+        await oscService.startOSC()
     })
 
-    ipcMain.handle('osc:disableOSC',()=>{
+    ipcMain.handle('osc:disableOSC',async ()=>{
         configStore.set('enableOSC',false)
-        disableOSC()
+        await oscService.closeOSC()
     })
 
     ipcMain.handle('osc:isOSCEnable',()=>{
-        return configStore.get('enableOSC')
+        return oscService.isOSCEnable
     })
 }

@@ -108,9 +108,9 @@ async function startApp() {
     const player = new Player(waudio)
     app.config.globalProperties.$player = player
     window.$player = player
-    window.transapi.toEmit('appRenderReady',null)
+    window.emitter.post('appRenderReady', null)
     app.mount('#app')
-    window.transapi.toEmit('appRenderMount',null)
+    window.emitter.post('appRenderMount', null)
 
     const profileStore = useProfileStore()
 
@@ -130,6 +130,8 @@ async function startApp() {
             profileStore.setUserAccount(null)
             FunctionalWindows.showLoginWindow()
         }
+
+
     })
 }
 

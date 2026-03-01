@@ -1,9 +1,9 @@
 
 import { BrowserWindow } from 'electron'
-import { windowManager } from '../window'
+import { windowManager } from './window'
 import { AppTypes } from '../../types/app'
 
-export class AppProcessController {
+export class PlayerController {
     private static getMainWindow(): BrowserWindow | undefined {
         return windowManager.getWindow('main')
     }
@@ -46,8 +46,9 @@ export class AppProcessController {
     }
 
     public static setPlayMode(mode: AppTypes.PlayMode): void {
-        if (!['list', 'listloop', 'loop', 'shuffle'].includes(mode)) return
-        this.sendToMain('control:playMode', mode)
+        if(typeof mode === 'string' && mode in ['list', 'listloop', 'loop', 'shuffle'] ){
+            this.sendToMain('control:playMode', mode)
+        }
     }
 
     public static switchPlayMode(): void {
@@ -55,6 +56,22 @@ export class AppProcessController {
     }
 
     public static playTrack(track: AppTypes.ITrackId): void {
-        this.sendToMain('control:playerPlayTrack', track)
+        if(this.isITrack(track)){
+            this.sendToMain('control:playerPlayTrack', track)
+        }
+        
+    }
+
+    public static isITrack(track:AppTypes.ITrackId):boolean{
+        if(track.id && track.platform in ['ncm','local','bili']){
+            if(track.platform === 'local'){
+                if(track.file){
+                    return true
+                }
+                return false
+            }
+            return true
+        }
+        return false
     }
 }
