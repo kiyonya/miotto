@@ -41,6 +41,7 @@ export class OSCProtocalService {
         'appThemeUpdate',
         'playerEqualizerUpdate'
     ]
+    private dsendTyp:string[] = ['number','boolean','string']
 
     public async startOSC() {
         if (this.isOSCEnable) { return }
@@ -56,7 +57,7 @@ export class OSCProtocalService {
             const oscGroup = defaultDataEmitter.group('osc')
             for(const eventName of this.oscAvailbleEvents){
                 oscGroup.on(eventName,(...args:any[])=>{
-                    this.clientMessageSender(eventName,args as any)
+                    this.clientMessageSender(eventName,...args)
                 })
             }
             this.isOSCEnable = true
@@ -126,26 +127,14 @@ export class OSCProtocalService {
         }
     }
 
-    private clientMessageSender<K extends keyof AppEvents.Events>(key: K, value: AppEvents.Events[K]) {
+    private clientMessageSender<K extends keyof AppEvents.Events>(key: K, ...args:any[]) {
         if (key && this.oscAvailbleEvents.includes(key)) {
             const route: string = '/' + key.replace(/([A-Z])/g, '/$1').toLowerCase()
-            let val: number | string | boolean | null = null
-            if (!value) {
-                val = null
-            }
-            else if (typeof value === 'boolean' || typeof value === 'number' || typeof value === 'string') {
-                val = value
-            }
-            else if (typeof value === 'object' || Array.isArray(value)) {
-                val = JSON.stringify(value)
-            }
-
-            if (!val) {
-                this.client?.send(route)
-            }
-            else {
-                this.client?.send(route, val)
-            }
+            const processArgs = args.map(i=>{
+                if(typeof i === 'object'){return JSON.stringify(i)}
+                return i
+            })
+            this.client?.send(route,...processArgs)
         }
     }
 
