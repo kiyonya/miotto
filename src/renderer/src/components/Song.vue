@@ -6,7 +6,7 @@
             <ArtistName :artists="song.artists"></ArtistName>
         </div>
         <div class="album single-line">{{ song.album.name }}</div>
-        <div class="duration">{{ $fmtms(song.duration) }}</div>
+        <div class="duration">{{ $fmtms(song.duration * 1000) }}</div>
     </div>
 </template>
 <script setup lang="ts">

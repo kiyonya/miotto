@@ -637,7 +637,7 @@ export class NCMAPIService {
             cover: ablumProp.picUrl,
             mv: song.mv || null,
             tns: song.tns || song.transNames || [],
-            duration: song.dt || song.duration
+            duration: (song.dt || song.duration) / 1000
         };
         return isong;
     }
