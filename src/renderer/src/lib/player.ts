@@ -5,6 +5,7 @@ import { usePlayerStore } from '@renderer/store/player'
 import { usePlaylistStore } from '@renderer/store/playlist'
 import useConfigStore from '@renderer/store/config'
 import { computed, watch } from 'vue'
+import md5 from 'blueimp-md5'
 
 export class Player {
     public playingId: AppTypes.ITrackId | null = null
@@ -222,7 +223,7 @@ export class Player {
         track.url = track.url.replaceAll('http://', 'https://')
         await this.waudio.loadSrc(track.url, autoPlay)
         const detail = await window.ncmapi.songDetail(ncmid, true)
-        const lyric = await window.ncmapi.songLyric(ncmid)
+        const lyric = await this.getLyricFromNCM(ncmid)
 
         this.updateSystemMediaSession(detail[0])
         this.playerStore.setOnPlayTrack(track, detail[0], trackId)
@@ -263,7 +264,7 @@ export class Player {
                 track = await window.localapi.getLocalTrack(file)
             }
             if (this.configStore.useNcmLyricForMatchedLocalMusic && detail.ncmMatchId) {
-                const lyric = await window.ncmapi.songLyric(detail.ncmMatchId)
+                const lyric = await this.getLyricFromNCM(detail.ncmMatchId)
                 this.playerStore.setLyric(lyric)
             }
             else {
@@ -279,24 +280,37 @@ export class Player {
 
     private async getSourceFromNCM(ncmid: number): Promise<AppTypes.ISongTrack> {
         const ck = `ncm-${ncmid}-${this.configStore.audioQuality}`
-        const cache = await window.cacheapi.getTrackCache(ck)
+        const ckmd5 = md5(ck)
+        const cache = await window.cacheapi.getAudioTrack(ckmd5)
         if (cache) {
             return cache
         }
         const track = await window.ncmapi.songUrl(ncmid, this.configStore.audioQuality)
-        window.cacheapi.cacheTrack(ck, track)
+        window.cacheapi.cacheAudioTrack(ckmd5,track)
         return track
     }
 
     private async getSourceFromBili(bv: string, cid: number): Promise<AppTypes.ISongTrack> {
         const ck = `bili-${bv}-${cid}`
-        const cache = await window.cacheapi.getTrackCache(ck)
+        const ckmd5 = md5(ck)
+        const cache = await window.cacheapi.getAudioTrack(ckmd5)
         if (cache) {
             return cache
         }
         const track = await window.biliapi.bvAudioTrack(bv, cid)
-        window.cacheapi.cacheTrack(ck, track)
+        window.cacheapi.cacheAudioTrack(ckmd5, track)
         return track
+    }
+
+    private async getLyricFromNCM(ncmid:number):Promise<AppTypes.ILyric>{
+        const idmd5 = md5(String(ncmid))
+        const cache = await window.cacheapi.getLyric(idmd5)
+        if(cache){
+            return cache
+        }
+        const lyric = await window.ncmapi.songLyric(ncmid)
+        window.cacheapi.cacheLyric(idmd5,lyric)
+        return lyric
     }
 
     public async playPlaylist(id: string | number, type: 'custom' | 'ncm', playId?: AppTypes.ITrackId) {

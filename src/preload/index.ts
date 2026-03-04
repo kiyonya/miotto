@@ -47,9 +47,12 @@ const localapi: AppAPI.Local = {
 }
 
 const cacheapi: AppAPI.Cache = {
-  getAudioCacheDir: () => ipcRenderer.invoke('cache:getAudioCacheDir'),
-  cacheTrack: (key: string, track: AppTypes.ISongTrack) => ipcRenderer.invoke('cache:cacheTrack', key, track),
-  getTrackCache: (key: string) => ipcRenderer.invoke('cache:getTrackCache', key)
+  cacheAudioTrack: (key: string, track: AppTypes.ISongTrack) => ipcRenderer.invoke('cacheapi:cacheAudioTrack', key, track),
+  getCacheDir: () => ipcRenderer.invoke('cacheapi:getCacheDir'),
+  clearCache: () => ipcRenderer.invoke('cacheapi:clearCache'),
+  getAudioTrack: (key: string) => ipcRenderer.invoke('cacheapi:getAudioTrack', key),
+  cacheLyric: (key: string, lyric: AppTypes.ILyric) => ipcRenderer.invoke('cacheapi:cacheLyric', key, lyric),
+  getLyric: (key: string) => ipcRenderer.invoke('cacheapi:getLyric', key)
 }
 
 const orpheusapi: AppAPI.Orpheus = {

@@ -25,9 +25,12 @@ export namespace AppAPI {
     }
 
     export interface Cache {
-        getAudioCacheDir: () => Promise<string>,
-        cacheTrack: (key: string, track: AppTypes.ISongTrack) => Promise<AppTypes.ISongTrack>,
-        getTrackCache: (key: string) => Promise<AppTypes.ISongTrack | null>
+        cacheAudioTrack:(key:string,track:AppTypes.ISongTrack)=>Promise<void>,
+        getCacheDir:()=>Promise<string>,
+        clearCache:()=>Promise<void>,
+        getAudioTrack:(key:string)=>Promise<AppTypes.ISongTrack | null>,
+        cacheLyric:(key:string,lyric:AppTypes.ILyric)=>Promise<void>,
+        getLyric:(key:string)=>Promise<AppTypes.ILyric | null>
     }
 
     export interface NCM {

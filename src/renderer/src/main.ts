@@ -133,6 +133,10 @@ async function startApp() {
 
 
     })
+
+    document.addEventListener('keydown',(e)=>{
+        console.log(e)
+    })
 }
 
 startApp()
