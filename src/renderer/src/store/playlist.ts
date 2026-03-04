@@ -1,42 +1,49 @@
-import { CustomPlaylistDatabase, ISongEntry } from "@renderer/database/playlist";
-import { uniq, uniqBy } from "lodash";
+import { flip, uniq, uniqBy } from "lodash";
 import pLimit from "p-limit";
 import { defineStore } from "pinia";
 import { AppTypes } from "src/types/app";
 
 interface PlaylistState {
-    playlists: AppTypes.IPlaylistBrief[],
-    db: CustomPlaylistDatabase
+    playlists: AppTypes.IPlaylistBrief[]
+}
+
+interface DBPlaylistDTO {
+    playlistName: string,
+    cover?: string,
+    isStar?: boolean,
+    description?: string
 }
 
 const usePlaylistStore = defineStore('playlist', {
     state: (): PlaylistState => ({
-        playlists: [],
-        db: new CustomPlaylistDatabase()
+        playlists: []
     }),
     actions: {
-        async createPlaylist(playlistName: string) {
-            const playlistId = await this.db.createPlaylist(playlistName)
-            this.playlists = await this.db.getAllPlaylistAsBrief()
+        async flushPlaylists() {
+            this.playlists = await window.electron.ipcRenderer.invoke('db::uplaylist:getAllPlaylistAsBrief')
+        },
+        async createPlaylist(createPlaylistDTO: DBPlaylistDTO) {
+            const playlistId = await window.electron.ipcRenderer.invoke('db::uplaylist:createPlaylist', createPlaylistDTO)
+            await this.flushPlaylists()
             return playlistId
         },
         async importLocalMusicToPlaylist(playlistId: string, filePath: string | string[]) {
             const files = Array.isArray(filePath) ? filePath : [filePath]
             const localSongs: AppTypes.ILocalSong[] = await window.localapi.batchGetLocalSong(files)
             for (const song of localSongs) {
-                await this.db.addSongToPlaylist(playlistId, song)
+                await window.electron.ipcRenderer.invoke('db::uplaylist:addSongToPlaylist', playlistId, song)
             }
-            this.playlists = await this.db.getAllPlaylistAsBrief()
+            await this.flushPlaylists()
         },
         async importBiliMusicToPlaylist(playlistId: string, biliSong: AppTypes.IBiliSong | AppTypes.IBiliSong[]) {
             const songs = Array.isArray(biliSong) ? biliSong : [biliSong]
             for (const song of songs) {
-                await this.db.addSongToPlaylist(playlistId, song)
+                await window.electron.ipcRenderer.invoke('db::uplaylist:addSongToPlaylist', playlistId, JSON.parse(JSON.stringify(song)))
             }
-            this.playlists = await this.db.getAllPlaylistAsBrief()
+            await this.flushPlaylists()
         },
         async getSong(songId: number | string): Promise<AppTypes.ISong> {
-            const song = await this.db.getSong(songId) as AppTypes.ILocalSong
+            const song = await window.electron.ipcRenderer.invoke('db::uplaylist:getSong', songId)
             if (!song) {
                 throw new Error('无法获取歌曲')
             }
@@ -46,14 +53,14 @@ const usePlaylistStore = defineStore('playlist', {
             return song
         },
         async getPlaylist(playlistId: string): Promise<AppTypes.IPlaylist> {
-            return await this.db.getPlaylist(playlistId)
+            return await window.electron.ipcRenderer.invoke('db::playlist:getPlaylist', playlistId)
         },
         async addSongToPlaylist(playlistId: string, song: AppTypes.ISong) {
-            await this.db.addSongToPlaylist(playlistId, song)
-            this.playlists = await this.db.getAllPlaylistAsBrief()
+            await window.electron.ipcRenderer.invoke('db::uplaylist:addSongToPlaylist', playlistId, song)
+            await this.flushPlaylists()
         },
         async init() {
-            this.playlists = await this.db.getAllPlaylistAsBrief()
+            await this.flushPlaylists()
         },
         async mapTrackIdsToSongs(tracks: AppTypes.ITrackId[], batchSize: number = 500, matchLocal = true): Promise<AppTypes.ISong[]> {
             tracks = uniqBy(tracks, 'id')
@@ -72,12 +79,12 @@ const usePlaylistStore = defineStore('playlist', {
                     ncmNeedRequestIds.add(track.id)
                 }
                 else if (track.platform === 'local') {
-                    const entry = await this.db.getEntry(track.id)
-                    if (entry && entry.type === track.platform) {
-                        dataMap.set(entry.id, this._transEntry2Song(entry))
-                        if (entry.ncmMatchId && matchLocal) {
-                            const localId = entry.id as string
-                            localNeedRequestMatchIds.set(entry.ncmMatchId, localId)
+                    const localSong = await this.getSong(track.id) as AppTypes.ILocalSong
+                    if (localSong && localSong.type === 'local') {
+                        dataMap.set(track.id, localSong)
+                        if (localSong.ncmMatchId && matchLocal) {
+                            const localId = track.id as string
+                            localNeedRequestMatchIds.set(localSong.ncmMatchId, localId)
                         }
                     }
                 }
@@ -162,105 +169,6 @@ const usePlaylistStore = defineStore('playlist', {
             }
             const songs = (await Promise.all(batchPromise)).flat(1)
             return songs
-        },
-        _transSong2Entry(song: AppTypes.ISong): ISongEntry {
-            if (song.type === 'local') {
-                const entry: ISongEntry = {
-                    name: song.name,
-                    album: song.album,
-                    artists: song.artists,
-                    cover: song.cover,
-                    mv: null,
-                    ncmMatchId: song.ncmMatchId,
-                    bilicid: null,
-                    id: song.id,
-                    type: 'local',
-                    ncmCover: song.ncmCover,
-                    duration: song.duration,
-                    localPath: song.localPath
-                }
-                return JSON.parse(JSON.stringify(entry))
-            }
-            else if (song.type === 'bili') {
-                const entry: ISongEntry = {
-                    name: song.name,
-                    album: song.album,
-                    artists: song.artists,
-                    cover: song.cover,
-                    mv: null,
-                    ncmMatchId: null,
-                    bilicid: song.bilicid,
-                    id: song.id,
-                    type: 'bili',
-                    ncmCover: null,
-                    duration: song.duration,
-                    localPath: null,
-                }
-                return JSON.parse(JSON.stringify(entry))
-            }
-            else if (song.type === 'ncm') {
-                const entry: ISongEntry = {
-                    name: song.name,
-                    album: song.album,
-                    artists: song.artists,
-                    cover: song.cover,
-                    mv: null,
-                    ncmMatchId: null,
-                    bilicid: null,
-                    id: song.id,
-                    type: 'ncm',
-                    ncmCover: song.cover,
-                    duration: song.duration,
-                    localPath: null,
-                }
-                return JSON.parse(JSON.stringify(entry))
-            }
-            else throw new Error()
-        },
-        _transEntry2Song(entry: ISongEntry): AppTypes.ISong {
-            if (entry.type === 'local') {
-                const song: AppTypes.ILocalSong = {
-                    name: entry.name,
-                    album: entry.album,
-                    artists: entry.artists,
-                    cover: entry.cover,
-                    ncmMatchId: entry.ncmMatchId,
-                    id: String(entry.id),
-                    type: 'local',
-                    ncmCover: entry.ncmCover,
-                    duration: entry.duration,
-                    localPath: entry.localPath as string
-                }
-                return song
-            }
-            else if (entry.type === 'bili') {
-                const song: AppTypes.IBiliSong = {
-                    name: entry.name,
-                    album: entry.album,
-                    artists: entry.artists,
-                    cover: entry.cover as string,
-                    bilicid: entry.bilicid as number,
-                    id: entry.id as string,
-                    type: 'bili',
-                    duration: entry.duration,
-                    mv: entry.mv
-                }
-                return song
-            }
-            else if (entry.type === 'ncm') {
-                const song: AppTypes.INCMSong = {
-                    name: entry.name,
-                    album: entry.album,
-                    artists: entry.artists,
-                    cover: entry.cover as string,
-                    id: entry.id as number,
-                    type: 'ncm',
-                    duration: entry.duration,
-                    mv: entry.mv
-                }
-                return song
-            }
-            else throw new Error()
         }
     },
     persist: {

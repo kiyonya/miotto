@@ -73,8 +73,10 @@ const trackLength = ref<number>(0)
 
 async function load(id: string) {
     playlistDetail.value = await playlistStore.getPlaylist(id)
+    console.log(playlistDetail.value)
     const trackIds = playlistDetail.value.tracks
     const songs = await playlistStore.mapTrackIdsToSongs(trackIds)
+    console.log(songs)
     tracks.value = songs
     trackLength.value = songs.length
 }

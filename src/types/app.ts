@@ -188,7 +188,7 @@ export namespace AppTypes {
     export type ISong = ILocalSong | INCMSong | IBiliSong
 
     export interface IPlaylist {
-        id: number,
+        id: number | string,
         name: string,
         cover: string,
         creator?: NCMTypes.IUserProfile,

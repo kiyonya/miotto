@@ -60,7 +60,6 @@ export class CustomPlaylistDatabase {
         }
         return iplaylist
     }
-
     public async getAllPlaylists(): Promise<AppTypes.IPlaylist[]> {
         const data = await this.db.table('playlists').toArray()
         return data.map((item) => ({
@@ -77,7 +76,6 @@ export class CustomPlaylistDatabase {
             subscribed: false
         }))
     }
-
     public async getAllPlaylistAsBrief(): Promise<AppTypes.IPlaylistBrief[]> {
         const data = await this.db.table('playlists').toArray()
         const playlistBriefs: AppTypes.IPlaylistBrief[] = []

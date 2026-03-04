@@ -125,7 +125,9 @@ onMounted(() => {
 async function openCreatePlaylist(){
     const playlistName = await FunctionalWindows.showCreatePlaylistWindow()
     if(playlistName){
-        const id = await playlistStore.createPlaylist(playlistName)
+        const id = await playlistStore.createPlaylist({
+            playlistName:playlistName
+        })
         console.log(id)
     }
 }

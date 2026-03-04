@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain, session, desktopCapturer } from 'electron'
+import { app, shell, session, desktopCapturer } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -14,6 +14,9 @@ import { MediaIpc } from './ipc/media'
 import { pluginIPC } from './ipc/plugin'
 import { windowManager } from './utils/window'
 import { controlIPC } from './ipc/control'
+import sqlite3 from 'node:sqlite'
+import { userPlaylistDatabase } from './sql/user-playlist'
+import { databaseIPC } from './ipc/database'
 
 function startAPP(){
 
@@ -45,6 +48,8 @@ function startAPP(){
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
   appIpc(mainWindow)
+  databaseIPC()
+
   
 }
 
