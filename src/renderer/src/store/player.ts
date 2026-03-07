@@ -67,8 +67,8 @@ const usePlayerStore = defineStore('player', {
         setPlayMode(playMode: 'shuffle' | 'list' | 'loop' | 'listloop') {
             this.player.playMode = playMode
 
-            window.emitter.setPost('playerPlaymodeUpdate', playMode)
-            window.emitter.setPost('playerPlaylistUpdate', this._noProxy(this.playlist))
+            window.emitter.setPost('player::playmodeUpdate', playMode)
+            window.emitter.setPost('player::playlistUpdate', this._noProxy(this.playlist))
 
         },
         switchPlaymode() {
@@ -83,13 +83,13 @@ const usePlayerStore = defineStore('player', {
             this.player.list = rawList
             this.player.shuffleList = shuffleList
 
-            window.emitter.setPost('playerPlaylistUpdate', this._noProxy(this.playlist))
+            window.emitter.setPost('player::playlistUpdate', this._noProxy(this.playlist))
         },
 
         setLyric(lyric: AppTypes.ILyric) {
             this.lyric = lyric
 
-            window.emitter.setPost('playingLyricUpdate', lyric)
+            window.emitter.setPost('playing::lyricUpdate', lyric)
         },
         setOnPlayTrack(track: AppTypes.ISongTrack, song: AppTypes.ISong, trackId: AppTypes.ITrackId) {
             this.onplay = {
@@ -98,9 +98,9 @@ const usePlayerStore = defineStore('player', {
                 trackId: trackId
             }
 
-            window.emitter.setPost('playingTrackUpdate', track)
-            window.emitter.setPost('playingTrackIdUpdate', this._noProxy(trackId))
-            window.emitter.setPost('playingSongUpdate',song)
+            window.emitter.setPost('playing::trackUpdate', track)
+            window.emitter.setPost('playing::trackIdUpdate', this._noProxy(trackId))
+            window.emitter.setPost('playing::songUpdate',song)
 
         },
         updateCurrentTime(currentTime: number) {
@@ -132,7 +132,7 @@ const usePlayerStore = defineStore('player', {
                 shuffleList.splice(to, 0, movedItem)
                 this.player.shuffleList = shuffleList
             }
-            window.emitter.setPost('playerPlaylistUpdate', this._noProxy(this.playlist))
+            window.emitter.setPost('player::playlistUpdate', this._noProxy(this.playlist))
         },
         isPlaying(song: AppTypes.ISong | AppTypes.ITrackId): boolean {
             if (isISong(song)) {

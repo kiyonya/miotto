@@ -11,6 +11,8 @@ import FunctionalWindows from './components/windows'
 import WAudio from './lib/waudio'
 
 import { Player } from './lib/player'
+import { setupKeyListener } from './script/keytap'
+import { addRemoteControlHandler } from './script/remote'
 
 const globalProperties = {
     install(app: App) {
@@ -108,9 +110,11 @@ async function startApp() {
     const player = new Player(waudio)
     app.config.globalProperties.$player = player
     window.$player = player
-    window.emitter.post('appRenderReady', null)
+    setupKeyListener()
+    addRemoteControlHandler()
+    window.emitter.post('app::renderMount', null)
     app.mount('#app')
-    window.emitter.post('appRenderMount', null)
+    window.emitter.post('app::renderMount', null)
 
     const profileStore = useProfileStore()
 
@@ -132,10 +136,6 @@ async function startApp() {
         }
 
 
-    })
-
-    document.addEventListener('keydown',(e)=>{
-        console.log(e)
     })
 }
 

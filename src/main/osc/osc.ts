@@ -5,6 +5,7 @@ import { defaultDataEmitter } from '../utils/transport'
 import net from 'node:net'
 import { AppEvents } from '../../types/event'
 import { AppTypes } from '../../types/app'
+import { windowManager } from '../utils/window'
 
 export class OSCProtocalService {
 
@@ -12,36 +13,40 @@ export class OSCProtocalService {
     private client: Client | null = null
     public isOSCEnable: boolean = false
     private oscAvailbleEvents: (keyof AppEvents.Events)[] = [
-        'audioMute',
-        'audioVolumeChange',
-        'audioTimeUpdate',
-        'audioCanplay',
-        'audioEnd',
-        'audioDuration',
-        'audioPlaystateUpdate',
-        'audioPause',
-        'audioPlay',
-        'audioSeek',
-        'audioUserRequestPause',
-        'audioUserRequestPlay',
-        'playingTrackUpdate',
-        'playingSongUpdate',
-        'playingTrackIdUpdate',
-        'playerPlaySong',
-        'playingLyricUpdate',
-        'playerPlaymodeUpdate',
-        'playerPlaylistUpdate',
-        'playerNextSong',
-        'playerPreviousSong',
-        'appMusicplayerOpen',
-        'appMusicplayerClose',
-        'appRouterUpdate',
-        'appRenderReady',
-        'appRenderMount',
-        'appThemeUpdate',
-        'playerEqualizerUpdate'
+        "audio::canplay",
+        "audio::duration",
+        "audio::end",
+        "audio::mute",
+        "audio::pause",
+        "audio::play",
+        "audio::playstateUpdate",
+        "audio::seek",
+        "audio::timeUpdate",
+        "audio::userRequestPause",
+        "audio::userRequestPlay",
+        "audio::volumeChange",
+        "player::nextSong",
+        "player::playSong",
+        "player::playlistUpdate",
+        "player::playmodeUpdate",
+        "player::previousSong",
+        "playing::lyricUpdate",
+        "playing::songUpdate",
+        "playing::trackIdUpdate",
+        "playing::trackUpdate",
+        "app::themeUpdate",
+        "app::renderMount",
+        "app::renderReady"
     ]
-    private dsendTyp:string[] = ['number','boolean','string']
+    private mainWindow = windowManager.mainWindow
+    private oscRouterMap:Record<string,(...args:any[])=>void> = {
+        "/player/pause":()=>this.mainWindow?.webContents.send('ctl:player::pause'),
+        "/player/play":()=>this.mainWindow?.webContents.send('ctl:player::play'),
+        "/player/next":()=>this.mainWindow?.webContents.send('ctl:player::next'),
+        "/player/previous":()=>this.mainWindow?.webContents.send('ctl:player::previous'),
+        "/player/playPause":()=>this.mainWindow?.webContents.send('ctl:player::playPause'),
+        "/player/playmode":(mode:string)=>this.mainWindow?.webContents.send('ctl:player::playMode', mode),
+    }
 
     public async startOSC() {
         if (this.isOSCEnable) { return }
@@ -53,11 +58,11 @@ export class OSCProtocalService {
                 this.server?.on('message', this.serverMessageHandler)
             })
             this.client = new Client('127.0.0.1', clientPort)
-            
+
             const oscGroup = defaultDataEmitter.group('osc')
-            for(const eventName of this.oscAvailbleEvents){
-                oscGroup.on(eventName,(...args:any[])=>{
-                    this.clientMessageSender(eventName,...args)
+            for (const eventName of this.oscAvailbleEvents) {
+                oscGroup.on(eventName, (...args: any[]) => {
+                    this.clientMessageSender(eventName, ...args)
                 })
             }
             this.isOSCEnable = true
@@ -127,14 +132,14 @@ export class OSCProtocalService {
         }
     }
 
-    private clientMessageSender<K extends keyof AppEvents.Events>(key: K, ...args:any[]) {
+    private clientMessageSender<K extends keyof AppEvents.Events>(key: K, ...args: any[]) {
         if (key && this.oscAvailbleEvents.includes(key)) {
             const route: string = '/' + key.replace(/([A-Z])/g, '/$1').toLowerCase()
-            const processArgs = args.map(i=>{
-                if(typeof i === 'object'){return JSON.stringify(i)}
+            const processArgs = args.map(i => {
+                if (typeof i === 'object') { return JSON.stringify(i) }
                 return i
             })
-            this.client?.send(route,...processArgs)
+            this.client?.send(route, ...processArgs)
         }
     }
 

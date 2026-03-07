@@ -18,21 +18,44 @@ export class Player {
     public control = {
         play: () => {
             this.waudio.play()
-            window.emitter.post('audioUserRequestPlay', true)
+            window.emitter.post('audio::userRequestPlay', true)
         },
         pause: () => {
             this.waudio.pause()
-            window.emitter.post('audioUserRequestPause', true)
+            window.emitter.post('audio::userRequestPause', true)
         },
         seek: (time: number) => {
             this.waudio.seek(time)
-            window.emitter.post('audioSeek', time)
+            window.emitter.post('audio::seek', time)
+        },
+        seekProgress: (progress: number) => {
+            const seekTime = this.waudio.seekProgress(progress)
+            if (seekTime) {
+                window.emitter.post('audio::seek', seekTime)
+            }
         },
         togglePlayPause: () => {
             if (this.isPlaying) { this.waudio.pause() }
             else { this.waudio.play() }
         },
-        volume: (volume: number) => this.waudio.volume(volume)
+        playPause: () => {
+            if (this.isPlaying) { this.waudio.pause() }
+            else { this.waudio.play() }
+        },
+        volume: (volume: number) => this.waudio.volume(volume),
+        mute:()=>{
+            this.waudio.mute(),
+            window.emitter.post('audio::mute',true)
+        },
+        unmute:()=>{
+            this.waudio.unmute(),
+            window.emitter.post('audio::mute',false)
+        },
+        next:()=>this.next(),
+        previous:()=>this.previous(),
+        playMode:(playMode:AppTypes.PlayMode)=>this.playerStore.setPlayMode(playMode),
+        switchPlayMode:()=>this.playerStore.switchPlaymode(),
+        movePlaylistItem:(from:number,to:number)=>this.playerStore.movePlaylistItem(from,to)
     }
 
     constructor(waudio?: WAudio) {
@@ -40,39 +63,39 @@ export class Player {
         this.addWAudioListener()
         this.addPlayerControlListener()
         this.addSystemMediaSessionListener()
-        
+
         if (this.playerStore.onplay?.trackId) {
             this.playingId = this.playerStore.onplay?.trackId
-            this.playTrack(this.playingId,this.configStore.autoplayWhenAppStart)
+            this.playTrack(this.playingId, this.configStore.autoplayWhenAppStart)
         }
     }
 
     private addWAudioListener() {
         this.waudio.on('play', () => {
             this.playerStore.updatePlayState(true)
-            window.emitter.setPost('audioPlaystateUpdate', true)
-            window.emitter.post('audioPlay', true)
+            window.emitter.setPost('audio::playstateUpdate', true)
+            window.emitter.post('audio::play', true)
             this.isPlaying = true
         })
         this.waudio.on('pause', () => {
             this.playerStore.updatePlayState(false)
-            window.emitter.setPost('audioPlaystateUpdate', false)
-            window.emitter.post('audioPause', true)
+            window.emitter.setPost('audio::playstateUpdate', false)
+            window.emitter.post('audio::pause', true)
             this.isPlaying = false
         })
         this.waudio.on('timeupdate', (ct: number) => {
             this.playerStore.updateCurrentTime(ct)
-            window.emitter.setPost('audioTimeUpdate', ct)
+            window.emitter.setPost('audio::timeUpdate', ct)
             this.updateSystemMediaSessionPlayState()
         })
         this.waudio.on('canplay', (dt: number) => {
             this.playerStore.updateDuration(dt)
-            window.emitter.setPost('audioDuration', dt)
-            window.emitter.post('audioCanplay', true)
+            window.emitter.setPost('audio::duration', dt)
+            window.emitter.post('audio::canplay', true)
         })
         this.waudio.on('end', this.handleAudioEnd.bind(this))
         this.waudio.on('volumechange', (volume: number) => {
-            window.emitter.setPost('audioVolumeChange', volume)
+            window.emitter.setPost('audio::volumeChange', volume)
         })
     }
 
@@ -115,7 +138,7 @@ export class Player {
 
     private handleAudioEnd() {
         const playMode = this.playerStore.player.playMode
-        window.emitter.post('audioEnd', true)
+        window.emitter.post('audio::end', true)
         if (playMode === 'loop') {
             this.waudio.seek(0)
             return
@@ -147,7 +170,7 @@ export class Player {
         }
         const nextTrackId = this.list[nextIndex]
 
-        window.emitter.post('playerNextSong', this._noProxy(nextTrackId), nextIndex)
+        window.emitter.post('player::nextSong', this._noProxy(nextTrackId), nextIndex)
 
 
         this.playTrack(nextTrackId)
@@ -166,7 +189,7 @@ export class Player {
         }
         const preTrackId = this.list[preIndex]
 
-        window.emitter.post('playerPreviousSong', this._noProxy(preTrackId), preIndex)
+        window.emitter.post('player::previousSong', this._noProxy(preTrackId), preIndex)
 
         this.playTrack(preTrackId)
     }
@@ -174,7 +197,7 @@ export class Player {
     public async playTrack(trackId: AppTypes.ITrackId, autoPlay: boolean = true) {
         this.playingId = trackId
 
-        window.emitter.post('playerPlaySong', this._noProxy(trackId))
+        window.emitter.post('player::playSong', this._noProxy(trackId))
 
         if (trackId.platform === 'ncm') {
             await this.playNcmTrack(trackId, autoPlay)
@@ -185,7 +208,7 @@ export class Player {
         else if (trackId.platform === 'local') {
             await this.playLocalTrack(trackId, autoPlay)
         }
-        
+
     }
 
     private async playNcmTrack(trackId: AppTypes.ITrackId, autoPlay: boolean = true) {
@@ -257,7 +280,7 @@ export class Player {
             return cache
         }
         const track = await window.ncmapi.songUrl(ncmid, this.configStore.audioQuality)
-        window.cacheapi.cacheAudioTrack(ckmd5,track)
+        window.cacheapi.cacheAudioTrack(ckmd5, track)
         return track
     }
 
@@ -273,14 +296,14 @@ export class Player {
         return track
     }
 
-    private async getLyricFromNCM(ncmid:number):Promise<AppTypes.ILyric>{
+    private async getLyricFromNCM(ncmid: number): Promise<AppTypes.ILyric> {
         const idmd5 = md5(String(ncmid))
         const cache = await window.cacheapi.getLyric(idmd5)
-        if(cache){
+        if (cache) {
             return cache
         }
         const lyric = await window.ncmapi.songLyric(ncmid)
-        window.cacheapi.cacheLyric(idmd5,lyric)
+        window.cacheapi.cacheLyric(idmd5, lyric)
         return lyric
     }
 

@@ -9,7 +9,7 @@ interface WebBrowserOptions {
     userAgent?: string
 }
 
-interface MiniPlayerManifest {
+interface IManifest {
     name: string,
     version: string,
     author?: string,
@@ -27,12 +27,16 @@ interface MiniPlayerManifest {
         y?: number,
         frame?: boolean,
         browser?: WebBrowserOptions,
+        transparent?:boolean,
+        backgroundColor?:string,
+        backgroundMaterial?:"auto" | "none" | "mica" | "acrylic" | "tabbed",
+        resizable?:boolean
     },
     entry: string
 }
 
 export async function createPluginProject(projectDir: string, projectName: string, devPort: number) {
-    const manifestJSON: MiniPlayerManifest = {
+    const manifestJSON: IManifest = {
         name: projectName || "YOUR MINI PROJECT",
         version: "1.0.0",
         author: "YOUR NAME",
@@ -56,7 +60,7 @@ export async function runPluginProject(manifest: string, openOnDev: boolean = fa
 
     if (!fse.existsSync(manifest)) { throw new Error('manifest not found') }
     try {
-        const manifestJSON: MiniPlayerManifest = JSON.parse(fse.readFileSync(manifest, 'utf-8'))
+        const manifestJSON: IManifest = JSON.parse(fse.readFileSync(manifest, 'utf-8'))
         if (!manifestJSON.name || !manifestJSON.entry || !manifestJSON.version) {
             throw new Error('NO MANIFEST')
         }
@@ -68,11 +72,16 @@ export async function runPluginProject(manifest: string, openOnDev: boolean = fa
             x: manifestJSON.window?.x || undefined,
             y: manifestJSON.window?.y || undefined,
             frame: manifestJSON.window?.frame ?? true,
+            transparent:manifestJSON.window?.transparent,
+            backgroundColor:manifestJSON.window?.backgroundColor,
+            backgroundMaterial:manifestJSON.window?.backgroundMaterial,
+            resizable:manifestJSON.window?.resizable,
             webPreferences: {
                 nodeIntegration: true,
                 contextIsolation: true,
                 webSecurity: true,
                 preload: path.join(__dirname, '../preload/plugin.mjs'),
+                
             }
         }, 'plugin')
 

@@ -8,6 +8,11 @@ export class WindowManager<AvailableIds extends Array<string | number> = Array<s
     constructor() {
         super()
     }
+
+    get mainWindow(){
+        return this.windows.get('main')
+    }
+    
     public createWindow(id: AvailableIds[number], options?: Electron.BaseWindowConstructorOptions & Electron.BrowserViewConstructorOptions, groupId?: AvailableGroupIds[number]): BrowserWindow {
         if (this.windows.has(id)) {
             throw new Error(`Window with id "${id}" already exists`)

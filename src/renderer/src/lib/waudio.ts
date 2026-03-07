@@ -160,6 +160,19 @@ export default class WAudio extends EventEmitter<WAudioEvents> {
         }
     }
 
+    public seekProgress(progress:number){
+        if(typeof progress !== 'number'){
+            return
+        }
+        const cprogress = clamp(progress,0,1)
+        if(this.duration){
+            const time = this.duration * cprogress
+            this.audioElement.currentTime = time
+            return time
+        }
+        return null
+    }
+
     public volume(volume: number) {
         volume = clamp(volume, 0, 1)
         this.audioElement.volume = volume
@@ -170,6 +183,7 @@ export default class WAudio extends EventEmitter<WAudioEvents> {
             return
         }
         this.volumeBeforeMute = this.audioElement.volume
+        this.audioElement.muted = true
         this.audioElement.volume = 0
     }
 
@@ -178,6 +192,7 @@ export default class WAudio extends EventEmitter<WAudioEvents> {
             return
         }
         this.audioElement.volume = this.volumeBeforeMute
+        this.audioElement.muted = false
     }
     public destory() {
         this.audioElement.remove()

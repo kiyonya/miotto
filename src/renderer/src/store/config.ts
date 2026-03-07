@@ -44,7 +44,7 @@ const useConfigStore = defineStore('config', {
             else{
                 this.appTheme = 'light'
             }
-            window.emitter.setPost('appThemeUpdate',this.appTheme)
+            window.emitter.setPost('app::themeUpdate',this.appTheme)
             document.querySelector('html')?.setAttribute('data-theme', this.appTheme)
         },
         switchEnableEqualizer(){
@@ -58,7 +58,7 @@ const useConfigStore = defineStore('config', {
         afterHydrate: () => {
             const configStore = useConfigStore()
             if (configStore.appTheme) {
-                 window.emitter.setPost('appThemeUpdate',configStore.appTheme)
+                 window.emitter.setPost('app::themeUpdate',configStore.appTheme)
                 document.querySelector('html')?.setAttribute('data-theme', configStore.appTheme)
             }
 
