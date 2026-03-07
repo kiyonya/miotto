@@ -13,6 +13,7 @@ export namespace AppEvents {
         "audio::pause": [pause: boolean]
         "audio::play": [play: boolean]
         "audio::seek": [seekTime: number]
+        "audio::frequency":[fq:Float32Array]
         "audio::userRequestPause": [userRequestPause: boolean]
         "audio::userRequestPlay": [userRequestPlay: boolean]
         "playing::trackUpdate": [track: AppTypes.ISongTrack]
@@ -33,13 +34,11 @@ export namespace AppEvents {
         "player::equalizerUpdate": [f: number[]]
     }
 
-    export type Controls = PlayerControls & {}
-
-    export interface PlayerControls {
+    export type Controls = {
         "player::play": []
         "player::pause": []
         "player::next": []
-        "player::playPause":[]
+        "player::playPause": []
         "player::previous": []
         "player::playTrack": [track: AppTypes.ITrackId, autoPlay: boolean]
         "player::playTrackList": [list: AppTypes.ITrackId[], start?: AppTypes.ITrackId]
@@ -49,11 +48,12 @@ export namespace AppEvents {
         "player::mute": []
         "player::unmute": []
         "player::playMode": [mode: AppTypes.PlayMode]
-        "player::swtichPlayMode": []
+        "player::swtichPlayMode": [],
+        "audio::cmpFrequency": [],
     }
 
-    export interface PluginAvailableEvents extends Events {}
-    export interface PluginAvailableControls extends PlayerControls {
-        
+    export interface PluginAvailableEvents extends Events { }
+    export interface PluginAvailableControls extends Controls {
+
     }
 }

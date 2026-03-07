@@ -1,35 +1,8 @@
 import { ipcMain } from "electron";
 import { createPluginProject, runPluginProject } from "../plugin";
 import { defaultDataEmitter } from "../utils/transport";
-import { AppEvents } from "../../types/event";
 import { windowManager } from "../utils/window";
-
-const pluginAvailbleEvents: (keyof AppEvents.PluginAvailableEvents)[] = [
-    "audio::canplay",
-    "audio::duration",
-    "audio::end",
-    "audio::mute",
-    "audio::pause",
-    "audio::play",
-    "audio::playstateUpdate",
-    "audio::seek",
-    "audio::timeUpdate",
-    "audio::userRequestPause",
-    "audio::userRequestPlay",
-    "audio::volumeChange",
-    "player::nextSong",
-    "player::playSong",
-    "player::playlistUpdate",
-    "player::playmodeUpdate",
-    "player::previousSong",
-    "playing::lyricUpdate",
-    "playing::songUpdate",
-    "playing::trackIdUpdate",
-    "playing::trackUpdate",
-    "app::themeUpdate",
-    "app::renderMount",
-    "app::renderReady"
-]
+import { PluginAvailableEvents } from "../../types/data";
 
 export function pluginIPC() {
 
@@ -40,7 +13,7 @@ export function pluginIPC() {
     ipcMain.handle('plugin:runPluginProject', async (_, manifest: string, devMode: boolean = false) => {
         const { window, winId } = await runPluginProject(manifest, devMode)
         console.log(winId)
-        pluginAvailbleEvents.forEach((eventName: string) => {
+        PluginAvailableEvents.forEach((eventName: string) => {
             defaultDataEmitter.group(winId).on(eventName, (...args: any[]) => {
                 window.webContents.send(`event:${eventName}`, ...args)
             })

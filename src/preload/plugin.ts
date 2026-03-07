@@ -1,53 +1,9 @@
 
 import { contextBridge, ipcRenderer } from 'electron'
-import { AppEvents } from '../types/event'
+import { PluginAvailableEvents,PluginAvailableControls } from '../types/data'
 
-const pluginAvailbleEvents: (keyof AppEvents.PluginAvailableEvents)[] = [
-    "audio::canplay",
-    "audio::duration",
-    "audio::end",
-    "audio::mute",
-    "audio::pause",
-    "audio::play",
-    "audio::playstateUpdate",
-    "audio::seek",
-    "audio::timeUpdate",
-    "audio::userRequestPause",
-    "audio::userRequestPlay",
-    "audio::volumeChange",
-    "player::nextSong",
-    "player::playSong",
-    "player::playlistUpdate",
-    "player::playmodeUpdate",
-    "player::previousSong",
-    "playing::lyricUpdate",
-    "playing::songUpdate",
-    "playing::trackIdUpdate",
-    "playing::trackUpdate",
-    "app::themeUpdate",
-    "app::renderMount",
-    "app::renderReady"
-]
-
-const pluginAvailbleEmits:(keyof AppEvents.PluginAvailableControls)[] = [
-  "player::play",
-  "player::pause",
-  "player::playPause",
-  "player::next",
-  "player::previous",
-  "player::playTrack",
-  "player::playTrackList",
-  "player::setVolume",
-  "player::seek",
-  "player::seekProgress",
-  "player::mute",
-  "player::unmute",
-  "player::playMode",
-  "player::swtichPlayMode"
-]
-
-const ALLOWED_EVENTS = new Set<string>(pluginAvailbleEvents.map(k => `event:${k}`))
-const ALLOW_EMITS = new Set<string>(pluginAvailbleEmits.map(k=>`ctl:${k}`))
+const ALLOWED_EVENTS = new Set<string>(PluginAvailableEvents.map(k => `event:${k}`))
+const ALLOW_EMITS = new Set<string>(PluginAvailableControls.map(k=>`ctl:${k}`))
 
 let winId: string = sessionStorage.getItem('winId') || ''
 
