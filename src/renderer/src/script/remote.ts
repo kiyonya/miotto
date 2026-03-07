@@ -16,8 +16,9 @@ const remoteControlHandlers: Record<keyof AppEvents.Controls, (...args: any[]) =
     "player::unmute": () => window.$player.control.unmute(),
     "player::playMode": (mode: AppTypes.PlayMode) => window.$player.control.playMode(mode),
     "player::swtichPlayMode": () => window.$player.control.switchPlayMode(),
-    "audio::cmpFrequency":()=>{
-        
+    "audio::getByteFrequency":()=>{
+        const u8array = window.$player.waudio.getCurrentByteFrequencyData()
+        window.emitter.post('audio::byteFrequency',u8array)
     }
 }
 

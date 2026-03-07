@@ -25,7 +25,7 @@ export const PluginAvailableEvents:(keyof AppEvents.PluginAvailableEvents)[] = [
     "app::themeUpdate",
     "app::renderMount",
     "app::renderReady",
-    "audio::frequency"
+    "audio::byteFrequency"
 ]
 
 function strictSatisfyControls<T extends readonly any[]>(emits: T & (keyof AppEvents.Controls extends T[number] ? any : never)): T {return emits}
@@ -45,7 +45,7 @@ export const PluginAvailableControls  = strictSatisfyControls([
   "player::unmute",
   "player::playMode",
   "player::swtichPlayMode",
-  "audio::cmpFrequency"
+  "audio::getByteFrequency"
 ] as const)
 
 
@@ -64,5 +64,5 @@ export const IPCMainRepostControls = strictSatisfyControls([
   "player::unmute",
   "player::playMode",
   "player::swtichPlayMode",
-  "audio::cmpFrequency"
+  "audio::getByteFrequency"
 ] as const)

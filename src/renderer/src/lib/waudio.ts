@@ -24,6 +24,7 @@ export default class WAudio extends EventEmitter<WAudioEvents> {
     public eqDefaultGain = new Array(10).fill(0)
     public eqDefaultQuality = 3
     public outputFadeGain: GainNode
+    private outputAnalyserNode:AnalyserNode
     private configStore = useConfigStore()
     private playAndPauseTimeout: NodeJS.Timeout | null = null
 
@@ -51,10 +52,13 @@ export default class WAudio extends EventEmitter<WAudioEvents> {
         this.audioSource = audioCtx.createMediaElementSource(this.audioElement)
         this.equalizer = new Equalizer(audioCtx, this.eqDefaultFrequency, this.eqDefaultGain, this.eqDefaultQuality, 'peaking')
         this.outputFadeGain = audioCtx.createGain()
+        this.outputAnalyserNode = audioCtx.createAnalyser()
+        this.outputAnalyserNode.fftSize = 512
 
         this.audioSource.connect(this.equalizer.input)
         this.equalizer.connect(this.outputFadeGain)
-        this.outputFadeGain.connect(audioCtx.destination)
+        this.outputFadeGain.connect(this.outputAnalyserNode)
+        this.outputAnalyserNode.connect(audioCtx.destination)
 
         this.startListener()
         this.setupEqualizerWatch()
@@ -70,6 +74,18 @@ export default class WAudio extends EventEmitter<WAudioEvents> {
 
     public disableEqualizer() {
         this.equalizer.disable()
+    }
+
+    public getCurrentByteFrequencyData(){
+        const dataArray = new Uint8Array(this.outputAnalyserNode.frequencyBinCount)
+        this.outputAnalyserNode.getByteFrequencyData(dataArray)
+        return dataArray
+    }
+
+    public getCurrentFloatFrequencyData(){
+        const dataArray = new Float32Array(this.outputAnalyserNode.frequencyBinCount)
+        this.outputAnalyserNode.getFloatFrequencyData(dataArray)
+        return dataArray
     }
 
     private setupEqualizerWatch() {
