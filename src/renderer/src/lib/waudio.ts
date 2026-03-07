@@ -1,5 +1,8 @@
 import EventEmitter from "eventemitter3"
 import Equalizer from "./eq"
+import { computed, watch } from "vue"
+import useConfigStore from "@renderer/store/config"
+import { clamp } from "lodash"
 
 interface WAudioEvents {
     pause: () => void
@@ -7,7 +10,7 @@ interface WAudioEvents {
     load: () => void
     canplay: (duration: number) => void
     timeupdate: (currentTime: number) => void
-    volumechange:(volume:number) => void
+    volumechange: (volume: number) => void
     end: () => void
 }
 
@@ -15,25 +18,28 @@ export default class WAudio extends EventEmitter<WAudioEvents> {
 
     private audioSource: MediaElementAudioSourceNode
     public audioElement: HTMLAudioElement
-    private volumeBeforeMute:number = 1
-    private equalizer:Equalizer
+    private volumeBeforeMute: number = 1
+    private equalizer: Equalizer
     public eqDefaultFrequency = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]
     public eqDefaultGain = new Array(10).fill(0)
     public eqDefaultQuality = 3
+    public outputFadeGain: GainNode
+    private configStore = useConfigStore()
+    private playAndPauseTimeout: NodeJS.Timeout | null = null
 
-    get currentTime(){
+    get currentTime() {
         return this.audioElement.currentTime
     }
 
-    get duration(){
+    get duration() {
         return this.audioElement.duration
     }
 
-    get paused(){
+    get paused() {
         return this.audioElement.paused
     }
 
-    get position(){
+    get position() {
         return this.audioElement.currentTime / this.audioElement.duration || 0
     }
 
@@ -43,22 +49,51 @@ export default class WAudio extends EventEmitter<WAudioEvents> {
         this.audioElement.crossOrigin = 'anonymous'
         const audioCtx = new AudioContext()
         this.audioSource = audioCtx.createMediaElementSource(this.audioElement)
-        this.equalizer = new Equalizer(audioCtx,this.eqDefaultFrequency,this.eqDefaultGain,this.eqDefaultQuality,'peaking')
+        this.equalizer = new Equalizer(audioCtx, this.eqDefaultFrequency, this.eqDefaultGain, this.eqDefaultQuality, 'peaking')
+        this.outputFadeGain = audioCtx.createGain()
+
         this.audioSource.connect(this.equalizer.input)
-        this.equalizer.connect(audioCtx.destination)
+        this.equalizer.connect(this.outputFadeGain)
+        this.outputFadeGain.connect(audioCtx.destination)
 
         this.startListener()
+        this.setupEqualizerWatch()
     }
 
-    public updateEqualizer(frequencies: number[], gains: number[], quality: number = 3){
-        this.equalizer.update(frequencies,gains,quality)
+    public updateEqualizer(frequencies: number[], gains: number[], quality: number = 3) {
+        this.equalizer.update(frequencies, gains, quality)
     }
-    public enalbeEqualizer(){
+
+    public enableEqualizer() {
         this.equalizer.enable()
     }
-    public disableEqualizer(){
+
+    public disableEqualizer() {
         this.equalizer.disable()
     }
+
+    private setupEqualizerWatch() {
+
+        const enableEqualizer = computed(() => this.configStore.enableEqualizer)
+        const equalizerFrequencies = computed(() => this.configStore.equalizerFrequencies)
+        const equalizerQuality = computed(() => this.configStore.equalizerQuality)
+        const equalizerGains = computed(() => this.configStore.equalizerGains)
+
+        watch(enableEqualizer, (enable) => {
+            if (enable) {
+                this.enableEqualizer()
+            }
+            else {
+                this.disableEqualizer()
+            }
+        })
+
+        watch([equalizerFrequencies, equalizerGains, equalizerQuality], ([frequencies, gains, quality]) => {
+            this.updateEqualizer(frequencies, gains, quality)
+        }, { immediate: true, deep: true })
+
+    }
+
     private startListener() {
 
         this.audioElement.addEventListener('pause', () => this.emit('pause'))
@@ -66,48 +101,85 @@ export default class WAudio extends EventEmitter<WAudioEvents> {
         this.audioElement.addEventListener('load', () => this.emit('load'))
         this.audioElement.addEventListener('canplay', () => this.emit('canplay', this.audioElement.duration))
         this.audioElement.addEventListener('timeupdate', () => this.emit('timeupdate', this.audioElement.currentTime))
-        this.audioElement.addEventListener('volumechange',()=>this.emit('volumechange',this.audioElement.volume))
+        this.audioElement.addEventListener('volumechange', () => this.emit('volumechange', this.audioElement.volume))
         this.audioElement.addEventListener('ended', () => this.emit('end'))
 
     }
+
     public async loadSrc(src: string, autoPlay: boolean = true) {
         this.audioElement.src = src
         this.audioElement.load()
         this.audioElement.pause()
         if (autoPlay) {
-            await this.audioElement.play()
+            this.play()
         }
     }
+
     public play() {
         if (!this.audioElement.paused) { return }
         this.audioElement.play()
+        if (this.configStore.enableAudioFade) {
+            this.outputFadeGain.gain.cancelScheduledValues(this.currentTime)
+            const curve = new Float32Array(2)
+            curve[0] = this.outputFadeGain.gain.value || 0
+            curve[1] = 1
+            this.outputFadeGain.gain.setValueCurveAtTime(curve, this.currentTime, this.configStore.audioFadeDuration / 1000)
+        }
+        this.playAndPauseTimeout && clearTimeout(this.playAndPauseTimeout)
+        this.playAndPauseTimeout = null
+
     }
+
     public pause() {
+        if (this.playAndPauseTimeout) {
+            return
+        }
         if (this.audioElement.paused) { return }
-        this.audioElement.pause()
+        if (this.configStore.enableAudioFade) {
+            this.outputFadeGain.gain.cancelScheduledValues(this.currentTime)
+            const curve = new Float32Array(2)
+            curve[0] = this.outputFadeGain.gain.value || 1
+            curve[1] = 0
+            this.outputFadeGain.gain.setValueCurveAtTime(curve, this.currentTime, this.configStore.audioFadeDuration / 1000)
+            if (this.playAndPauseTimeout) {
+                clearTimeout(this.playAndPauseTimeout)
+            }
+            this.playAndPauseTimeout = setTimeout(() => {
+                this.audioElement.pause()
+            }, this.configStore.audioFadeDuration);
+        }
+        else {
+            this.audioElement.pause()
+            this.playAndPauseTimeout = null
+        }
     }
+
     public seek(time: number) {
-        this.audioElement.currentTime = time
+        if (this.duration) {
+            this.audioElement.currentTime = clamp(time, 0, this.duration)
+        }
     }
-    public volume(volume:number){
-        volume = Math.max(0,volume)
-        volume = Math.min(volume,1)
+
+    public volume(volume: number) {
+        volume = clamp(volume, 0, 1)
         this.audioElement.volume = volume
     }
-    public mute(){
-        if(this.audioElement.muted){
+
+    public mute() {
+        if (this.audioElement.muted) {
             return
         }
         this.volumeBeforeMute = this.audioElement.volume
         this.audioElement.volume = 0
     }
-    public unmute(){
-        if(!this.audioElement.muted){
+
+    public unmute() {
+        if (!this.audioElement.muted) {
             return
         }
         this.audioElement.volume = this.volumeBeforeMute
     }
-    public destory(){
+    public destory() {
         this.audioElement.remove()
     }
 

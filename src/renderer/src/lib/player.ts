@@ -4,31 +4,50 @@ import WAudio from './waudio'
 import { usePlayerStore } from '@renderer/store/player'
 import { usePlaylistStore } from '@renderer/store/playlist'
 import useConfigStore from '@renderer/store/config'
-import { computed, watch } from 'vue'
 import md5 from 'blueimp-md5'
 
 export class Player {
+
     public playingId: AppTypes.ITrackId | null = null
     public waudio: WAudio
     private playerStore = usePlayerStore()
     private playlistStore = usePlaylistStore()
     private configStore = useConfigStore()
-
     public isPlaying: boolean = false
+
+    public control = {
+        play: () => {
+            this.waudio.play()
+            window.emitter.post('audioUserRequestPlay', true)
+        },
+        pause: () => {
+            this.waudio.pause()
+            window.emitter.post('audioUserRequestPause', true)
+        },
+        seek: (time: number) => {
+            this.waudio.seek(time)
+            window.emitter.post('audioSeek', time)
+        },
+        togglePlayPause: () => {
+            if (this.isPlaying) { this.waudio.pause() }
+            else { this.waudio.play() }
+        },
+        volume: (volume: number) => this.waudio.volume(volume)
+    }
 
     constructor(waudio?: WAudio) {
         this.waudio = waudio || new WAudio()
-        this.addListener()
+        this.addWAudioListener()
         this.addPlayerControlListener()
+        this.addSystemMediaSessionListener()
+        
         if (this.playerStore.onplay?.trackId) {
             this.playingId = this.playerStore.onplay?.trackId
             this.playTrack(this.playingId,this.configStore.autoplayWhenAppStart)
         }
-        this.addSystemMediaSessionListener()
-        this.startWatcher()
     }
 
-    private addListener() {
+    private addWAudioListener() {
         this.waudio.on('play', () => {
             this.playerStore.updatePlayState(true)
             window.emitter.setPost('audioPlaystateUpdate', true)
@@ -94,34 +113,6 @@ export class Player {
         })
     }
 
-    private startWatcher() {
-        const enableEqualizer = computed(() => this.configStore.enableEqualizer)
-        watch(enableEqualizer, () => {
-            if (enableEqualizer.value) {
-                this.waudio.enalbeEqualizer()
-            }
-            else {
-                this.waudio.disableEqualizer()
-            }
-        }, { immediate: true })
-
-        const equalizerFrequencies = computed(() => this.configStore.equalizerFrequencies)
-        const equalizerQuality = computed(() => this.configStore.equalizerQuality)
-        const equalizerGains = computed(() => this.configStore.equalizerGains)
-        watch(equalizerGains, () => {
-            this.waudio.updateEqualizer(equalizerFrequencies.value, equalizerGains.value, equalizerQuality.value)
-        }, {
-            deep: true,
-            immediate: true
-        })
-
-        watch(equalizerQuality, () => {
-            this.waudio.updateEqualizer(equalizerFrequencies.value, equalizerGains.value, equalizerQuality.value)
-        }, {
-            immediate: true
-        })
-    }
-
     private handleAudioEnd() {
         const playMode = this.playerStore.player.playMode
         window.emitter.post('audioEnd', true)
@@ -132,26 +123,6 @@ export class Player {
         else {
             this.next()
         }
-    }
-
-    public control = {
-        play: () => {
-            this.waudio.play()
-            window.emitter.post('audioUserRequestPlay', true)
-        },
-        pause: () => {
-            this.waudio.pause()
-            window.emitter.post('audioUserRequestPause', true)
-        },
-        seek: (time: number) => {
-            this.waudio.seek(time)
-            window.emitter.post('audioSeek', time)
-        },
-        togglePlayPause: () => {
-            if (this.isPlaying) { this.waudio.pause() }
-            else { this.waudio.play() }
-        },
-        volume: (volume: number) => this.waudio.volume(volume)
     }
 
     get list(): AppTypes.ITrackId[] {

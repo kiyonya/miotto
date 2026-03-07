@@ -14,6 +14,9 @@ interface ConfigState {
     equalizerGains: number[], 
     equalizerQuality: number,
 
+    enableAudioFade:boolean,
+    audioFadeDuration:number,
+
     autoplayWhenAppStart:boolean
 }
 
@@ -29,6 +32,8 @@ const useConfigStore = defineStore('config', {
         equalizerGains:new Array(10).fill(0),
         equalizerQuality:3,
         enableEqualizer:false,
+        enableAudioFade:true,
+        audioFadeDuration:500,
         autoplayWhenAppStart:false
     }),
     actions:{
