@@ -51,4 +51,9 @@ export namespace AppEvents {
         "player::playMode": [mode: AppTypes.PlayMode]
         "player::swtichPlayMode": []
     }
+
+    export interface PluginAvailableEvents extends Events {}
+    export interface PluginAvailableControls extends PlayerControls {
+        
+    }
 }

@@ -2,7 +2,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { AppEvents } from '../types/event'
 
-const pluginAvailbleEvents: (keyof AppEvents.Events)[] = [
+const pluginAvailbleEvents: (keyof AppEvents.PluginAvailableEvents)[] = [
     "audio::canplay",
     "audio::duration",
     "audio::end",
@@ -29,7 +29,7 @@ const pluginAvailbleEvents: (keyof AppEvents.Events)[] = [
     "app::renderReady"
 ]
 
-const pluginAvailbleEmits:(keyof AppEvents.Controls)[] = [
+const pluginAvailbleEmits:(keyof AppEvents.PluginAvailableControls)[] = [
   "player::play",
   "player::pause",
   "player::playPause",

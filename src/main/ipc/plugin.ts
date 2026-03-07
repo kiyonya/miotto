@@ -4,7 +4,7 @@ import { defaultDataEmitter } from "../utils/transport";
 import { AppEvents } from "../../types/event";
 import { windowManager } from "../utils/window";
 
-const pluginAvailbleEvents: (keyof AppEvents.Events)[] = [
+const pluginAvailbleEvents: (keyof AppEvents.PluginAvailableEvents)[] = [
     "audio::canplay",
     "audio::duration",
     "audio::end",
