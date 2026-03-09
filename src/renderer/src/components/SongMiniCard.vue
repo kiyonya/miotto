@@ -1,9 +1,9 @@
 <template>
-    <div class="song" :class="{playing:song.id === playingTrack?.id && song.type === playingTrack.platform}">
+    <div class="song" :class="{playing:song.id === playingTrack?.id && song.type === playingTrack.platform}" @click="handlePlay">
         <img v-imglazy="$imgrsz(song.cover as string, 200)" alt="" class="cover">
         <div class="song-info">
             <div class="name single-line">{{ song.name }}</div>
-            <ArtistName :artists="song.artists"></ArtistName>
+            <ArtistName :artists="song.artists" @click.stop></ArtistName>
         </div>
     </div>
 </template>
@@ -18,6 +18,14 @@ const playingTrack = computed(()=>playerStore.onplay?.trackId)
 const props = defineProps<{
     song: AppTypes.ISong
 }>()
+
+const emits = defineEmits<{
+    play:[song:AppTypes.ISong]
+}>()
+
+function handlePlay(){
+    emits('play',props.song)
+}
 </script>
 
 <style scoped>

@@ -5,7 +5,7 @@
         <div class="group songs">
             <div class="subtitle">单曲</div>
             <div class="song-grid">
-                <SongMiniCard :song="song" v-for="song in complexResult?.songs.slice(0,12)"></SongMiniCard>
+                <SongMiniCard :song="song" v-for="song in complexResult?.songs.slice(0,12)" @play="handleSongsPlay"></SongMiniCard>
             </div>
         </div>
 
@@ -29,6 +29,7 @@
 import AlbumCard from '@renderer/components/AlbumCard.vue';
 import PlaylistCard from '@renderer/components/PlaylistCard.vue';
 import SongMiniCard from '@renderer/components/SongMiniCard.vue';
+import { song2TrackId } from '@renderer/utils/quickplay';
 import { AppTypes } from 'src/types/app';
 import { onBeforeMount, onMounted, ref } from 'vue';
 
@@ -45,12 +46,24 @@ onBeforeMount(()=>{
     window.ncmapi.searchResultComplex(keyword.value).then(data=>complexResult.value=data)
 })
 
+
+function handleSongsPlay(startSong:AppTypes.ISong){
+    const list = complexResult.value?.songs || []
+    const ids = list.map(song2TrackId)
+    const id = song2TrackId(startSong)
+    window.$player.playTrackList(ids,id)
+}
+
 </script>
 <style scoped>
 .result{
     display: flex;
     flex-direction: column;
     gap: 0.7rem;
+}
+.title{
+    font-size: 1.4rem;
+    font-weight: 500;
 }
 .group{
     display: flex;
@@ -66,9 +79,10 @@ onBeforeMount(()=>{
 }
 .song-grid{
     display: grid;
-    grid-template-columns: repeat(4,1fr);
+    grid-template-columns: repeat(3,1fr);
     grid-template-rows: auto;
     width: 100%;
+    gap: 0.5rem;
 }
 .playlist-grid{
     display: grid;
