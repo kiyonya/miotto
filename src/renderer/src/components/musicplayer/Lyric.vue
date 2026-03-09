@@ -81,7 +81,7 @@
         <div class="lyric-control">
 
            <TabSwitch :items="lyricDisplayModeItems" v-model="lyricDisplayMode" v-if="showLyricTypeSwitch" class="switch"></TabSwitch>
-           <div class="d"></div>
+           <div class="d" v-if="showLyricTypeSwitch"></div>
            <button class="btn" @click="lyricOffsetDecrese"><Icon icon="fluent:caret-left-16-filled" /></button>
            <button class="btn" @click="lyricOffsetIncrese"><Icon icon="fluent:caret-right-16-filled" /></button>
            <span class="lyric-offset" v-if="showLyricOffsetTip">{{ (lyricOffset / 1000).toFixed(1) }}s</span>
