@@ -25,12 +25,12 @@
                             </div>
                             <img v-imglazy="$imgrsz(tracks[ref].cover as string, 200)" alt="" class="song-cover">
                             <div class="song-detail">
-                                <div class="name single-line">{{ tracks[ref].name }}</div>
+                                <div class="name single-line">{{ tracks[ref]?.name }}</div>
                                 <span class="artist">
-                                    {{ tracks[ref].artists[0].name }}
+                                    {{ tracks[ref].artists[0]?.name }}
                                 </span>
                             </div>
-                            <div class="duration">{{ $fmtms(tracks[ref].duration) }}</div>
+                            <div class="duration">{{ $fmtms(tracks[ref]?.duration) }}</div>
                         </div>
                     </template>
                 </template>
