@@ -44,12 +44,14 @@ export class Player {
         },
         volume: (volume: number) => this.waudio.volume(volume),
         mute:()=>{
-            this.waudio.mute(),
-            window.emitter.post('audio::mute',true)
+            this.waudio.mute()
         },
         unmute:()=>{
-            this.waudio.unmute(),
-            window.emitter.post('audio::mute',false)
+            this.waudio.unmute()
+        },
+        toggleMute:()=>{
+            const isMute = this.waudio.toggleMute()
+            window.emitter.post('audio::mute',isMute)
         },
         next:()=>this.next(),
         previous:()=>this.previous(),
@@ -95,6 +97,7 @@ export class Player {
         })
         this.waudio.on('end', this.handleAudioEnd.bind(this))
         this.waudio.on('volumechange', (volume: number) => {
+            this.playerStore.updateVolume(volume)
             window.emitter.setPost('audio::volumeChange', volume)
         })
     }

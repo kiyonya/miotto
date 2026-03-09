@@ -11,7 +11,8 @@ interface WAudioEvents {
     canplay: (duration: number) => void
     timeupdate: (currentTime: number) => void
     volumechange: (volume: number) => void
-    end: () => void
+    end: () => void,
+    mute:()=>void,
 }
 
 export default class WAudio extends EventEmitter<WAudioEvents> {
@@ -117,9 +118,14 @@ export default class WAudio extends EventEmitter<WAudioEvents> {
         this.audioElement.addEventListener('load', () => this.emit('load'))
         this.audioElement.addEventListener('canplay', () => this.emit('canplay', this.audioElement.duration))
         this.audioElement.addEventListener('timeupdate', () => this.emit('timeupdate', this.audioElement.currentTime))
-        this.audioElement.addEventListener('volumechange', () => this.emit('volumechange', this.audioElement.volume))
+        this.audioElement.addEventListener('volumechange', () => {
+            this.emit('volumechange', this.audioElement.volume)
+            if(this.audioElement.volume === 0){
+                this.emit('mute')
+            }
+        })
         this.audioElement.addEventListener('ended', () => this.emit('end'))
-
+        
     }
 
     public async loadSrc(src: string, autoPlay: boolean = true) {
@@ -196,20 +202,33 @@ export default class WAudio extends EventEmitter<WAudioEvents> {
 
     public mute() {
         if (this.audioElement.muted) {
-            return
+            return this.audioElement.muted
         }
         this.volumeBeforeMute = this.audioElement.volume
         this.audioElement.muted = true
         this.audioElement.volume = 0
+        return this.audioElement.muted 
     }
 
     public unmute() {
         if (!this.audioElement.muted) {
-            return
+            return this.audioElement.muted
+        }
+        if(this.volumeBeforeMute <= 0){
+            this.volumeBeforeMute = 0.75
         }
         this.audioElement.volume = this.volumeBeforeMute
         this.audioElement.muted = false
+        return this.audioElement.muted 
     }
+
+    public toggleMute(){
+        if(this.audioElement.muted){
+           return this.unmute()
+        }
+       return this.mute()
+    }
+
     public destory() {
         this.audioElement.remove()
     }

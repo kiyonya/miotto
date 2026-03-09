@@ -111,6 +111,17 @@ const usePlayerStore = defineStore('player', {
         },
         updateVolume(volume: number) {
             this.audioState.volume = volume
+            if(volume <= 0){
+                this.audioState.muted = true
+                window.emitter.post('audio::mute',true)
+            }
+            else{
+                const isMuted = this.audioState.muted
+                if(isMuted){
+                    window.emitter.post('audio::mute',false)
+                }
+                this.audioState.muted = false
+            }
         },
         updatePlayState(isPlaying: boolean) {
             this.audioState.playing = isPlaying

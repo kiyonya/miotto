@@ -13,7 +13,7 @@ export namespace AppEvents {
         "audio::pause": [pause: boolean]
         "audio::play": [play: boolean]
         "audio::seek": [seekTime: number]
-        "audio::byteFrequency":[fq:Uint8Array]
+        "audio::byteFrequency": [fq: Uint8Array]
         "audio::userRequestPause": [userRequestPause: boolean]
         "audio::userRequestPlay": [userRequestPlay: boolean]
         "playing::trackUpdate": [track: AppTypes.ISongTrack]

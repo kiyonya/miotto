@@ -1,6 +1,7 @@
 <template>
-    <div class="lyric-component" ref="lyricContainer">
-        <div class="lyric-list">
+    <div class="lyric-component">
+        <div class="lyric-container" ref="lyricContainer">
+                <div class="lyric-list">
             <div class="line" v-for="(line, index) in renderLyrics" :class="{ highlight: line.highlight }"
                 :data-index="index">
 
@@ -26,8 +27,8 @@
                             </template>
 
                         </div>
-                        <div class="translate-lyric">{{ line.mlyric.translateLyric?.string }}</div>
-                        <div class="roma-lyric"></div>
+                        <div class="translate-lyric" v-if="lyricDisplayMode === 'tns'">{{ line.mlyric.translateLyric?.string }}</div>
+                        <div class="roma-lyric" v-if="lyricDisplayMode === 'roma'">{{ line.mlyric.romaLyric?.string }}</div>
                     </div>
                 </template>
 
@@ -75,6 +76,17 @@
             </div>
 
         </div>
+        </div>
+        
+        <div class="lyric-control">
+
+           <TabSwitch :items="lyricDisplayModeItems" v-model="lyricDisplayMode" v-if="showLyricTypeSwitch" class="switch"></TabSwitch>
+           <div class="d"></div>
+           <button class="btn" @click="lyricOffsetDecrese"><Icon icon="fluent:caret-left-16-filled" /></button>
+           <button class="btn" @click="lyricOffsetIncrese"><Icon icon="fluent:caret-right-16-filled" /></button>
+           <span class="lyric-offset" v-if="showLyricOffsetTip">{{ (lyricOffset / 1000).toFixed(1) }}s</span>
+           <button class="btn" style="margin-left: auto;" @click="saveLyric"><Icon icon="fluent:save-16-regular" /></button>
+        </div>
     </div>
 
 </template>
@@ -83,9 +95,15 @@ import { scrollCenterDistance } from '@renderer/hooks/useScroll';
 import { AppTypes } from 'src/types/app';
 import { computed, nextTick, onMounted, onUnmounted, ref, WatchHandle } from 'vue';
 import { computeHighlightV2 } from './lyric';
+import TabSwitch from '../components/TabSwitch.vue';
+import { Icon } from '@iconify/vue';
 
 const props = defineProps<{
     lyric: AppTypes.ILyric
+}>()
+
+const emits = defineEmits<{
+    saveLyric:[]
 }>()
 
 interface RenderLyric {
@@ -120,6 +138,14 @@ const renderLyrics = computed<RenderLyric[]>(() => {
     return renderLyrics
 })
 
+const showLyricTypeSwitch = computed<boolean>(()=>{
+    if(!props.lyric.pure && props?.lyric.lyrics.some(lyric=>lyric.type === 'lyric' && lyric.mainLyric && lyric.romaLyric && lyric.translateLyric)){
+        return true
+    }
+    return false
+})
+
+
 const highlightIndex = ref<number>(-1)
 const highlightWordIndex = ref<number>(-1)
 const highlightGapProgress = ref<number>(-1)
@@ -132,6 +158,23 @@ let lyricScrollRestoreTimeout: NodeJS.Timeout | null = null
 let lastIndex: number = -Infinity
 let lyricComputeInterval:number =50
 let lastLyricComputeTime:number = 0
+
+const lyricDisplayMode = ref<'roma' | 'tns'>('tns')
+const lyricDisplayModeItems = [
+    {
+        label:'音',
+        value:'roma',
+    },
+    {
+        label:'译',
+        value:'tns'
+    },
+]
+
+const lyricOffset = ref<number>(0)
+const showLyricOffsetTip = ref<boolean>(false)
+let showLyricOffsetTipTimeout:NodeJS.Timeout | null  =null
+
 
 function startRenderLyric() {
     if (!window.$player?.waudio.paused) {
@@ -152,7 +195,7 @@ function updateLyricState() {
         highlightWordIndex.value = 0
         highlightGapProgress.value = 0
 
-        const timeState = computeHighlightV2(props.lyric.lyrics, timems)
+        const timeState = computeHighlightV2(props.lyric.lyrics, timems + lyricOffset.value)
         highlightIndex.value = timeState.lineIndex
 
         if (timeState.lineIndex !== lastIndex) {
@@ -210,6 +253,28 @@ function onResize() {
     })
 }
 
+function lyricOffsetIncrese(){
+    lyricOffset.value += 200
+    lyricOffsetTip()
+}
+function lyricOffsetDecrese(){
+    lyricOffset.value -= 200
+    lyricOffsetTip()
+}
+function lyricOffsetTip(){
+     showLyricOffsetTip.value = true
+    if(showLyricOffsetTipTimeout){
+        clearTimeout(showLyricOffsetTipTimeout)
+    }
+    showLyricOffsetTipTimeout = setTimeout(() => {
+        showLyricOffsetTip.value = false
+    }, 1000);
+}
+
+ function saveLyric() {
+    emits('saveLyric')
+}
+
 onMounted(() => {
     if (lyricContainer.value) {
         lyricContainer.value.addEventListener('scroll', onContainerScroll)
@@ -252,11 +317,62 @@ onUnmounted(() => {
 .lyric-component {
     width: 100%;
     height: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.lyric-container{
+    width: 100%;
+    flex: 1;
     overflow: auto;
 }
 
-.lyric-component::-webkit-scrollbar {
+.lyric-container::-webkit-scrollbar {
     display: none;
+}
+
+.lyric-control{
+    width: 100%;
+    height: fit-content;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    .d{
+        height: 80%;
+        width: 1.5px;
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .switch{
+        height: 1.6rem;
+    }
+
+    .btn{
+        height: 1.6rem;
+        font-size: 1.3rem;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        background: none;
+        color:rgba(255, 255, 255, 0.65);
+        aspect-ratio: 1/1;
+        border-radius: var(--br-1);
+        cursor: pointer;
+    }
+
+    .btn:hover{
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    .lyric-offset{
+         color:rgba(255, 255, 255, 0.65);
+         font-size: 0.9rem;
+    }
 }
 
 .lyric-list {
@@ -441,4 +557,6 @@ onUnmounted(() => {
         }
     }
 }
+
+
 </style>

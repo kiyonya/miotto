@@ -2,10 +2,12 @@ import { contextBridge, ipcRenderer, webFrame } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import { AppTypes } from '../types/app'
 import { AppAPI } from '../types/api'
-import { AppEvents } from '../types/event'
+
 
 const appapi: AppAPI.APP = {
   showOpenDialog: (options?: Electron.OpenDialogOptions) => ipcRenderer.invoke('app:showOpenDialog', options),
+  showSaveDialog:(options?:Electron.SaveDialogOptions)=>ipcRenderer.invoke('app:showSaveDialog',options),
+  writeFile:(filePath: string, data: string | NodeJS.ArrayBufferView | ArrayBuffer, options?:{encoding?: BufferEncoding ;mode?: number;flag?: string;})=>ipcRenderer.invoke('app:writeFile', filePath, data, options),
   minimize: () => ipcRenderer.invoke('app:minimize'),
   maximize: () => ipcRenderer.invoke('app:maximize'),
   close: () => ipcRenderer.invoke('app:close')

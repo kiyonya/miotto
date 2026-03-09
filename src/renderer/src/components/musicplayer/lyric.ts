@@ -48,7 +48,7 @@ export function computeHighlightV2(lyric: AppTypes.MLyric.CombineLine[], timems:
     }
 }
 
-function computeHltLineIndex(lyric: AppTypes.MLyric.CombineLine[], timems: number): number {
+export function computeHltLineIndex(lyric: AppTypes.MLyric.CombineLine[], timems: number): number {
     let left = 0;
     let right = lyric.length - 1;
     let result = -1;
@@ -68,7 +68,7 @@ function computeHltLineIndex(lyric: AppTypes.MLyric.CombineLine[], timems: numbe
     return result;
 }
 
-function computeHltWordIndex(words: AppTypes.MLyric.TimelineWord[], timems: number): number {
+export function computeHltWordIndex(words: AppTypes.MLyric.TimelineWord[], timems: number): number {
     if (!words || words.length === 0) return -1;
     if (timems < words[0].startTime) {
         return -1;

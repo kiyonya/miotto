@@ -1,6 +1,6 @@
 <template>
     <div class="player">
-
+        <div class="drag-area"></div>
         <button class="close" @click="appStore.toggleShowMusicPlayer()">
             <Icon icon="mingcute:down-line" />
         </button>
@@ -12,7 +12,7 @@
             <div class="mask" :style="{ opacity: backgroundGrayLevel }"></div>
         </div>
 
-        <div class="song">
+        <div class="song" :class="{ 'song-center': !showRight }">
             <div class="song-info">
                 <div class="basic">
                     <div class="name single-line">{{ onplay?.song.name }}</div>
@@ -21,7 +21,8 @@
             </div>
 
             <DropShadowImg :src="$imgrsz(onplay?.song.cover, 500)" class="cover" v-if="onplay?.song.cover"
-                :key="onplay?.song.cover">
+                :key="onplay?.song.cover" :class="{ scale: !audioState.playing }"
+                @contextmenu="handleCoverMenu($event)">
             </DropShadowImg>
 
             <div class="slider">
@@ -44,8 +45,8 @@
                     <Icon icon="tabler:player-track-prev-filled" />
                 </button>
                 <button class="control-btn ct" @click.stop="player?.control.togglePlayPause">
-                    <Icon icon="line-md:play-filled" v-if="!audioState.playing" />
-                    <Icon icon="mdi:pause" v-else />
+                    <Icon icon="fluent:play-20-filled" v-if="!audioState.playing" />
+                    <Icon icon="fluent:pause-20-filled" v-else />
                 </button>
 
                 <button class="control-btn" @click.stop="player?.next">
@@ -56,10 +57,23 @@
                     <Icon icon="material-symbols:line-weight" v-else />
                 </button>
             </div>
+            <div class="volume">
+                <button class="volume-button" @click="player.control.toggleMute">
+                    <Icon icon="fluent:speaker-mute-24-regular" class="mute" v-if="volumeState === 'mute'" />
+                    <Icon icon="fluent:speaker-1-24-regular" class="low" v-if="volumeState === 'low'" />
+                    <Icon icon="fluent:speaker-24-regular" class="high" v-if="volumeState === 'high'" />
+                </button>
+                <VueSlider class="volume-slider" :max="1" :min="0" :interval="0.1" v-model="volumeProgress"
+                    :tooltip="'none'" :dotStyle="{ display: 'none' }"
+                    :railStyle="{ background: 'var(--slider-rail-color)' }"
+                    :processStyle="{ background: 'var(--slider-process-color)' }" :height="5"></VueSlider>
+
+            </div>
         </div>
 
-        <div class="lyric">
-            <Lyric v-if="infoDisplayMode === 'lyric' && playingLyric" :key="onplay?.song.id" :lyric="playingLyric">
+        <div class="right-display" v-if="showRight">
+            <Lyric v-if="infoDisplayMode === 'lyric' && playingLyric" :key="onplay?.song.id" :lyric="playingLyric"
+                @saveLyric="saveLyric">
             </Lyric>
             <PlaylistView v-if="infoDisplayMode === 'list'"></PlaylistView>
         </div>
@@ -90,7 +104,9 @@ import { Icon } from '@iconify/vue';
 import { rgb2Hsl } from '../../utils/color';
 import DropShadowImg from '../DropShadowImg.vue';
 import PlaylistView from './PlaylistView.vue';
-
+import VueSlider from 'vue-slider-component'
+import { mlyric2Lrc } from '@renderer/utils/lyric';
+import FunctionalWindows from '../windows';
 const vueInstance = getCurrentInstance()
 const player = window.$player
 
@@ -118,12 +134,38 @@ const audioProgress = computed<number>({
     }
 })
 
+const volumeProgress = computed<number>({
+    get: () => {
+        return audioState.value.volume
+    },
+    set: (volume: number) => {
+        player.control.volume(volume)
+    }
+})
+
 const backdropBaseColor = ref<number[]>([0, 0, 0])
 const dynamicBackgroundCvs = ref<HTMLCanvasElement | null>(null)
 let dynamicBackground: DynamicBackground | null
 const backgroundGrayLevel = ref<number>(0.5)
 
 const infoDisplayMode = ref<"lyric" | "list">('lyric')
+
+const showRight = computed<boolean>(() => {
+    if (!playingLyric.value?.pure) { return true }
+    else {
+        if (infoDisplayMode.value === 'list') { return true }
+    }
+    return false
+})
+
+const volumeState = computed<'high' | 'low' | 'mute'>(() => {
+    if (audioState.value.muted) { return 'mute' }
+    else {
+        const volume = audioState.value.volume
+        if (volume > 0.7) { return 'high' }
+        else { return 'low' }
+    }
+})
 
 
 onMounted(() => {
@@ -181,6 +223,60 @@ function switchDisplayMode() {
         infoDisplayMode.value = 'list'
     }
 }
+
+async function saveLyric() {
+    const mlyric = playingLyric.value
+    const song = onplay.value?.song
+    if (mlyric && song) {
+        const lrc = mlyric2Lrc(mlyric, song)
+        const save = await window.appapi.showSaveDialog({
+            filters: [
+                { name: '歌词文件', extensions: ['lrc'] }
+            ],
+            defaultPath: `${song.name}.lrc`,
+            title: "保存歌词文件",
+            buttonLabel: "确认保存"
+        })
+        console.log(save)
+        if (!save.canceled && save.filePath) {
+            const w = await window.appapi.writeFile(save.filePath, lrc, { encoding: 'utf-8' })
+            console.log(w)
+        }
+    }
+}
+
+function handleCoverMenu(event: MouseEvent) {
+    console.log(event)
+    FunctionalWindows.showContextMenu({
+        x: event.x,
+        y: event.y,
+        items: [
+            {
+                label: "保存封面", 
+                icon:'fluent:save-16-regular',
+                onClick: async () => {
+                    const cover = onplay.value?.song.cover
+                    const filename = `${onplay.value?.song.name}.jpg`
+                    if (cover && (cover.startsWith('http') || cover?.startsWith('https'))) {
+                        const req = await fetch(cover)
+                        const buf = await req.arrayBuffer()
+                        const c = await window.appapi.showSaveDialog({
+                            filters: [
+                                { name: '图片', extensions: ['jpg'] }
+                            ],
+                            defaultPath: filename,
+                            title: "保存封面文件",
+                            buttonLabel: "确认保存"
+                        })
+                        if (!c.canceled && c.filePath) {
+                            window.appapi.writeFile(c.filePath, buf)
+                        }
+                    }
+                }
+            }
+        ]
+    })
+}
 </script>
 <style scoped>
 .player {
@@ -192,9 +288,12 @@ function switchDisplayMode() {
     overflow: hidden;
     display: flex;
     flex-direction: row;
+    align-items: center;
     box-sizing: border-box;
     padding: 3.5rem 3.6rem;
 
+    --slider-rail-color: rgba(255, 255, 255, 0.35);
+    --slider-process-color: white;
 
     .close {
         background: none;
@@ -217,6 +316,15 @@ function switchDisplayMode() {
     .close:hover {
         backdrop-filter: brightness(1.4);
     }
+}
+
+.drag-area {
+    width: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 3rem;
+    -webkit-app-region: drag;
 }
 
 .background {
@@ -267,7 +375,7 @@ function switchDisplayMode() {
     }
 }
 
-.lyric {
+.right-display {
     width: 50%;
     height: 100%;
     overflow-y: hidden;
@@ -281,8 +389,14 @@ function switchDisplayMode() {
     height: 100%;
     z-index: 1200;
     display: flex;
+    justify-content: center;
     flex-direction: column;
     gap: 0.8rem;
+    transition: .5s;
+
+    .scale {
+        transform: scale(0.9);
+    }
 
     .song-info {
 
@@ -313,6 +427,7 @@ function switchDisplayMode() {
         box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
         margin-bottom: 0.6rem;
         position: relative;
+        transition: .5s;
 
         .layer-1,
         .layer-2 {
@@ -350,11 +465,11 @@ function switchDisplayMode() {
         }
 
         .ct {
-            font-size: 2.5rem;
-            color: rgb(34, 34, 34);
-            background: rgb(255, 255, 255);
+            font-size: 2.8rem;
+            color: white;
             border-radius: 50%;
             margin: 0 0.8rem;
+            padding: 0.8rem;
         }
 
         .control-btn:nth-child(1) {
@@ -393,6 +508,37 @@ function switchDisplayMode() {
             border-radius: 3px;
         }
     }
+
+    .volume {
+        display: flex;
+        flex-direction: row;
+        width: 100%;
+        align-items: center;
+
+        .volume-button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            padding: 0.5rem;
+            width: fit-content;
+            height: fit-content;
+            aspect-ratio: 1/1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 0.5rem;
+        }
+
+        .volume-slider {
+            flex: 1;
+        }
+    }
+}
+
+.song-center {
+    margin: auto;
 }
 
 .slider {

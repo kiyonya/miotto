@@ -19,6 +19,8 @@ export namespace AppAPI {
 
     export interface APP {
         showOpenDialog: (options?: Electron.OpenDialogOptions) => Promise<Electron.OpenDialogReturnValue>,
+        showSaveDialog:(options?:Electron.SaveDialogOptions)=>Promise<Electron.SaveDialogReturnValue>,
+        writeFile:(filePath: string, data: string | NodeJS.ArrayBufferView | ArrayBuffer, options?:{encoding?: BufferEncoding ;mode?: number;flag?: string;})=>Promise<{success: boolean; error?: string}>,
         minimize: () => void,
         maximize: () => void,
         close: () => void
