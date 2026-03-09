@@ -327,6 +327,7 @@ onUnmounted(() => {
     width: 100%;
     flex: 1;
     overflow: auto;
+    -webkit-mask: linear-gradient(180deg,#000 75%, transparent 100%);
 }
 
 .lyric-container::-webkit-scrollbar {
