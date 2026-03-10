@@ -1,0 +1,33 @@
+.titleBar {
+    margin: 3px;
+    margin-left: 2px;
+    transform: translateY(3px);
+    
+}
+
+.titleContainer {
+    -webkit-app-region: drag;
+}
+
+.options {
+    margin-top: 0;
+    margin: 0 5px 0 5px;
+    padding-left: 6px;
+    border-bottom: solid 3px white;
+    
+}
+
+.options li:nth-child(n) {
+    list-style-type: none;
+    display: inline;
+    padding: 9px;
+    font-size: 18px;
+    user-select: none;
+}
+
+.progress {
+    margin: 0 5px 0 5px;
+    border-top: solid 2px rgba(135, 135, 135, 0.77);
+    filter: blur(0.5px);
+    border-bottom: solid 1px black;
+}

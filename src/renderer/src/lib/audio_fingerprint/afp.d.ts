@@ -1,1 +1,0 @@
-export async function GenerateFP(floatarray:Float32Array):Promise<string>

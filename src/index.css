@@ -1,0 +1,14 @@
+@font-face {
+  src: "./assets/vertopal.com_sserife.woff2";
+  font-family: "default serif";
+}
+
+body {
+  display: flex;
+  flex-flow: column nowrap;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  margin: 0;
+  font-family: default serif;
+}
