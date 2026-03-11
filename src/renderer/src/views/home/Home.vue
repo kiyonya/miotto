@@ -9,30 +9,33 @@
                     </DropShadowImg>
                     <div class="mask">
                         <div class="tn">
-                            <Icon icon="material-symbols:thumb-up" />
-                            每日推荐
+                            每日<br>推荐
                         </div>
                     </div>
                 </div>
                 <div class="style-song">
-                    <div class="subtitle">根据您的风格精选</div>
-                    <HorizontalScroll>
-                        <div class="gd">
+                    <HorizontalScrollGrid :col="2" :row="3" :gap="0.5" class="g2">
                         <SongMiniCard :song="song" v-for="song in ncmRcmdStyleSongs.slice(0,12)" @click="handleNcmRecommendStyleSongPlay(song)"></SongMiniCard>
-                    </div>
-                    </HorizontalScroll>
+                    </HorizontalScrollGrid>
+
                 </div>
             </div>
+
+            <div class="playlists">
+                <div class="title">雷达歌单</div>
+                <HorizontalScrollGrid :col="4" :row="1" :gap="0.8">
+                     <PlaylistCard :playlist="playlist" v-for="playlist in ncmRadioPlaylists"></PlaylistCard>
+                </HorizontalScrollGrid>
+            </div>
+
+
+
             <div class="line playlists">
-                <div class="subtitle">推荐歌单</div>
+                <div class="title">来听听这些歌单</div>
 
-                <div class="gd">
-                    <PlaylistCard :playlist="playlist" v-for="playlist in ncmRcmdPlaylists.slice(0,8)"></PlaylistCard>
-                </div>
-
-
-
-
+                <HorizontalScrollGrid :col="4" :row="1" :gap="0.8">
+                     <PlaylistCard :playlist="playlist" v-for="playlist in ncmRcmdPlaylists.slice(1)"></PlaylistCard>
+                </HorizontalScrollGrid>
 
             </div>
         </div>
@@ -48,13 +51,22 @@ import { Icon } from '@iconify/vue';
 import PlaylistCard from '@renderer/components/PlaylistCard.vue';
 import HorizontalScroll from '@renderer/components/HorizontalScroll.vue';
 import { song2TrackId } from '@renderer/utils/dataformat';
+import HorizontalScrollGrid from '@renderer/components/HorizontalScrollGrid.vue';
 const ncmDailyRecommend = ref<AppTypes.INCMSong[]>([])
 const ncmRcmdPlaylists = ref<AppTypes.IPlaylistBrief[]>([])
 const ncmRcmdStyleSongs = ref<AppTypes.INCMSong[]>([])
+const ncmRadioPlaylists = ref<AppTypes.IPlaylist[]>([])
+const radioPlaylists = [3136952023, 5320167908, 5300458264, 5362359247, 5327906368, 5341776086]
 async function load() {
     window.ncmapi.recommendSongs().then(songs => ncmDailyRecommend.value = songs)
     window.ncmapi.recommendPlaylists().then(p => ncmRcmdPlaylists.value = p)
     window.ncmapi.recommendStyleSongs().then(s => ncmRcmdStyleSongs.value = s)
+    ncmRadioPlaylists.value = await loadRadioPlaylist()
+}
+async function loadRadioPlaylist() {
+    const loadPromises = radioPlaylists.map(i=>window.ncmapi.playlistDetail(i,true))
+    const playlists = await Promise.all(loadPromises)
+    return playlists
 }
 onBeforeMount(() => {
     load()
@@ -72,6 +84,8 @@ function handleNcmRecommendStyleSongPlay(song:AppTypes.ISong){
     flex-direction: column;
     overflow-y: hidden;
     height: fit-content;
+    padding: 1rem 2rem;
+    gap: 0.5rem;
 }
 
 .block {
@@ -79,10 +93,10 @@ function handleNcmRecommendStyleSongPlay(song:AppTypes.ISong){
     display: flex;
     flex-direction: column;
     height: fit-content;
-    gap: 0.5rem;
+    gap: 0.8rem;
 
     .title {
-        font-size: 1.8rem;
+        font-size: 1.5rem;
         font-weight: 500;
     }
 
@@ -100,12 +114,12 @@ function handleNcmRecommendStyleSongPlay(song:AppTypes.ISong){
         display: flex;
         width: 100%;
         height: 12rem;
-        gap: 1rem;
+        gap: 2rem;
     }
 
     .daily-song {
-        aspect-ratio: 1/1;
-        max-width: 20rem;
+        aspect-ratio: 4/3.05;
+        max-width: 22rem;
         flex-shrink: 0;
         height: 100%;
         position: relative;
@@ -133,7 +147,7 @@ function handleNcmRecommendStyleSongPlay(song:AppTypes.ISong){
             color: white;
 
             .tn {
-                font-size: 1.5rem;
+                font-size: 2rem;
                 font-weight: 500;
                 display: flex;
                 align-items: center;
@@ -158,13 +172,9 @@ function handleNcmRecommendStyleSongPlay(song:AppTypes.ISong){
         height: 100%;
         gap: 0.2rem;
 
-        .gd {
+        .g2 {
             display: grid;
             flex: 1;
-            width:fit-content;
-            grid-template-columns: repeat(4,50%);
-            grid-template-rows: repeat(3, 1fr);
-
         }
     }
 
@@ -172,15 +182,18 @@ function handleNcmRecommendStyleSongPlay(song:AppTypes.ISong){
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
-        
+        --cc:4;
 
         .gd {
             display: grid;
             flex: 1;
             width: 100%;
-            grid-template-columns: repeat(4, 1fr);
-            grid-template-rows: repeat(2, 1fr);
+            grid-auto-columns: calc((100% - 0.8rem * var(--cc)) / 4);
+            grid-auto-flow: column;
+            grid-template-rows: auto;
             gap: 0.8rem;
+            overflow-x: auto;
+            
         }
 
         .playlist {

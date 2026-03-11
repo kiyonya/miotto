@@ -1,7 +1,7 @@
 <template>
     <RouterLink class="playlist" :to="{name:playlist.type === 'custom' ? 'PlaylistCustom' : 'PlaylistNcm' ,params:{id:playlist.id}}">
         <div class="imgarea">
-            <DropShadowImg :src="playlist.cover" v-if="playlist.cover" class="cover"></DropShadowImg>
+            <img :src="playlist.cover" v-if="playlist.cover" alt="" class="cover">
             <div class="mask">
                  <button class="playbtn">
                 <Icon icon="fluent:play-12-filled" />
@@ -48,6 +48,7 @@ function onPlaylistClick(){
     min-width: 0;
     position: relative;
     text-decoration: none;
+    scroll-snap-align: start;
 
     .imgarea {
         width: 100%;
@@ -99,6 +100,7 @@ function onPlaylistClick(){
         aspect-ratio: 1/1;
         height: auto;
         z-index: 11;
+        border-radius: var(--br-1);
     }
 
     .name {

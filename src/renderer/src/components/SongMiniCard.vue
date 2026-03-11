@@ -38,6 +38,7 @@ function handlePlay(){
     padding: 0.3rem;
     overflow: hidden;
     border-radius: var(--br-1);
+    scroll-snap-align: start;
 
 
     .song-info {
