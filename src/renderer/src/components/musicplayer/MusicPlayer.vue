@@ -70,7 +70,9 @@
 
         <div class="right-display" v-if="showRight">
             <Lyric v-if="infoDisplayMode === 'lyric' && playingLyric" :key="onplay?.song.id" :lyric="playingLyric"
-                @saveLyric="saveLyric">
+                @saveLyric="saveLyric"
+                @lyricSeek="handleLyricSeek"
+            >
             </Lyric>
             <PlaylistView v-if="infoDisplayMode === 'list'"></PlaylistView>
         </div>
@@ -259,6 +261,10 @@ function handleCoverMenu(event: MouseEvent) {
             }
         ]
     })
+}
+
+function handleLyricSeek(timems:number){
+    player.control.seek(timems / 1000)
 }
 </script>
 <style scoped>

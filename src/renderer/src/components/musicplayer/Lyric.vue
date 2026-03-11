@@ -3,7 +3,7 @@
         <div class="lyric-container" ref="lyricContainer">
                 <div class="lyric-list">
             <div class="line" v-for="(line, index) in renderLyrics" :class="{ highlight: line.highlight }"
-                :data-index="index">
+                :data-index="index" @click="lyricSeek(line.mlyric.lineStartTime)">
 
                 <template v-if="line.mlyric.type === 'lyric'">
                     <div class="lyric">
@@ -103,7 +103,8 @@ const props = defineProps<{
 }>()
 
 const emits = defineEmits<{
-    saveLyric:[]
+    saveLyric:[],
+    lyricSeek:[timems:number]
 }>()
 
 interface RenderLyric {
@@ -244,6 +245,10 @@ function onContainerScroll() {
         pauseScroll = false
         scrollLyric(highlightIndex.value)
     }, 1000);
+}
+
+function lyricSeek(timems:number){
+    emits('lyricSeek',timems)
 }
 
 
@@ -390,6 +395,7 @@ onUnmounted(() => {
     .line {
         display: flex;
         flex-direction: column;
+        cursor: pointer;
     }
 
     .line:first-child {
