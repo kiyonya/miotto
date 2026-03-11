@@ -6,10 +6,7 @@
         </button>
 
         <div class="background">
-            <img :src="$imgrsz(onplay?.song.cover as string, 500)" alt="" class="base-img" v-if="onplay?.song.cover">
-            <div class="backdrop-basecolor" :style="{ background: `rgb(${backdropBaseColor})` }"></div>
-            <canvas class="dynamic-background" ref="dynamicBackgroundCvs"></canvas>
-            <div class="mask" :style="{ opacity: backgroundGrayLevel }"></div>
+            <DynamicBackgroud :cover="playingSongCover" :matchColor="matchColor"></DynamicBackgroud>
         </div>
 
         <div class="song" :class="{ 'song-center': !showRight }">
@@ -91,15 +88,19 @@
             </defs>
         </svg>
 
+        <span class="tip"
+            style="position: absolute;left: 1rem;bottom: 1rem;color: white;opacity: 0.5;z-index: 9999;font-size: 0.9rem;">
+            Miotto MusicPlayer Beta v0.6.5
+        </span>
+
     </div>
 </template>
 <script setup lang="ts">
 import { useAppStore } from '@renderer/store/app';
 import { usePlayerStore } from '@renderer/store/player';
 import ColorThief from 'colorthief';
-import { computed, getCurrentInstance, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, getCurrentInstance, onMounted, ref, watch } from 'vue';
 import Lyric from './Lyric.vue';
-import DynamicBackground from './dynamic_background';
 import { Icon } from '@iconify/vue';
 import { rgb2Hsl } from '../../utils/color';
 import DropShadowImg from '../DropShadowImg.vue';
@@ -107,6 +108,7 @@ import PlaylistView from './PlaylistView.vue';
 import VueSlider from 'vue-slider-component'
 import { mlyric2Lrc } from '@renderer/utils/lyric';
 import FunctionalWindows from '../windows';
+import DynamicBackgroud from './DynamicBackgroud.vue';
 const vueInstance = getCurrentInstance()
 const player = window.$player
 
@@ -143,11 +145,7 @@ const volumeProgress = computed<number>({
     }
 })
 
-const backdropBaseColor = ref<number[]>([0, 0, 0])
-const dynamicBackgroundCvs = ref<HTMLCanvasElement | null>(null)
-let dynamicBackground: DynamicBackground | null
-const backgroundGrayLevel = ref<number>(0.5)
-
+const matchColor = ref<[r: number, g: number, b: number]>([255, 255, 255])
 const infoDisplayMode = ref<"lyric" | "list">('lyric')
 
 const showRight = computed<boolean>(() => {
@@ -167,52 +165,37 @@ const volumeState = computed<'high' | 'low' | 'mute'>(() => {
     }
 })
 
+const playingSongCover = computed(() => onplay.value?.song.cover || undefined)
+
 
 onMounted(() => {
     const colorThief = new ColorThief()
-
-    if (dynamicBackgroundCvs.value) {
-        dynamicBackground = new DynamicBackground(dynamicBackgroundCvs.value)
-        dynamicBackground.start()
-    }
-
-    watch(onplay, (newValue, _) => {
+    watch(playingSongCover, (cover, _) => {
         Promise.resolve().then(() => {
-            if (newValue) {
+            if (cover) {
                 let img: null | HTMLImageElement = new Image()
                 img.crossOrigin = 'anonymous'
-                const url = newValue?.song.cover
+                const url = cover
                 if (!url) { return }
                 img.src = vueInstance?.appContext.config.globalProperties.$imgrsz(url as string, 200) || url
                 img.onload = (e) => {
                     const colors = colorThief.getPalette(e.target as HTMLImageElement, 10, 5)
-                    let matchColor = [255, 255, 255];
                     const suitableColor = colors.find(rgbArr => {
                         const [_, s, __] = rgb2Hsl(rgbArr);
                         return s > 0.4;
                     });
                     if (suitableColor) {
-                        matchColor = suitableColor;
+                        matchColor.value = suitableColor;
                     }
-                    const [r, g, b] = matchColor
-                    dynamicBackground?.setColors(matchColor)
-                    backdropBaseColor.value = [r, g, b]
-                    let grayLevel = (0.3 * r + 0.59 * g + 0.11 * b) / 255
-                    backgroundGrayLevel.value = grayLevel
+                    else {
+                        matchColor.value = [255, 255, 255]
+                    }
                 }
             }
         })
     }, {
         immediate: true
     })
-})
-
-onUnmounted(() => {
-    if (dynamicBackground) {
-        dynamicBackground.unmount()
-        dynamicBackground = null
-    }
-    // window.gc()
 })
 
 function switchDisplayMode() {
@@ -252,8 +235,8 @@ function handleCoverMenu(event: MouseEvent) {
         y: event.y,
         items: [
             {
-                label: "保存封面", 
-                icon:'fluent:save-16-regular',
+                label: "保存封面",
+                icon: 'fluent:save-16-regular',
                 onClick: async () => {
                     const cover = onplay.value?.song.cover
                     const filename = `${onplay.value?.song.name}.jpg`

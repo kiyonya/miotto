@@ -6,7 +6,9 @@ interface ICircle {
     dx: number,
     dy: number,
     r: number,
-    color: [number, number, number, number]
+    color: [number, number, number, number],
+    targetColor?: [number, number, number, number], // 目标颜色
+    colorTransitionProgress?: number // 过渡进度 0-1
 }
 
 export default class DynamicBackgroundWebGL {
@@ -19,36 +21,41 @@ export default class DynamicBackgroundWebGL {
     private exit: boolean = false
     private circles: ICircle[] = []
     private circleCount: number = 0
-    
+
     // WebGL buffers
     private positionBuffer: WebGLBuffer | null = null
     private colorBuffer: WebGLBuffer | null = null
     private sizeBuffer: WebGLBuffer | null = null
-    
+
     // Uniform locations
     private resolutionUniform: WebGLUniformLocation | null = null
-    
+
     // Circle data arrays
     private positions: Float32Array = new Float32Array(0)
     private colors: Float32Array = new Float32Array(0)
     private sizes: Float32Array = new Float32Array(0)
-    
+
     // 存储生成的颜色（RGB 0-255格式）
     private generatedColors: number[][] = []
+
+    // 颜色过渡相关
+    private isTransitioning: boolean = false
+    private transitionStartTime: number = 0
+    private transitionDuration: number = 1000 // 过渡持续时间（毫秒）
 
     constructor(canvas: HTMLCanvasElement) {
         this.cvs = canvas;
         this.cvs.width = window.innerWidth * devicePixelRatio;
         this.cvs.height = window.innerHeight * devicePixelRatio;
-        
+
         // 尝试获取WebGL2上下文，失败则回退到WebGL1
-        const gl = this.cvs.getContext('webgl2') || 
-                  this.cvs.getContext('webgl') as WebGLRenderingContext;
-        
+        const gl = this.cvs.getContext('webgl2') ||
+            this.cvs.getContext('webgl') as WebGLRenderingContext;
+
         if (!gl) {
             throw new Error('WebGL not supported');
         }
-        
+
         this.gl = gl;
         this.circles = [];
         this.circleCount = 0;
@@ -57,15 +64,15 @@ export default class DynamicBackgroundWebGL {
         this.candraw = false;
         this.exit = false;
         this.generatedColors = lastColorSave || [];
-        
+
         window.addEventListener('resize', this.resize.bind(this));
-        
+
         this.initWebGL();
     }
-    
+
     private initWebGL(): void {
         const gl = this.gl;
-        
+
         // 顶点着色器
         const vertexShaderSource = `
             attribute vec2 a_position;
@@ -85,104 +92,104 @@ export default class DynamicBackgroundWebGL {
                 v_color = a_color;
             }
         `;
-        
+
         // 片元着色器
         const fragmentShaderSource = `
             precision mediump float;
-varying vec4 v_color;
+            varying vec4 v_color;
 
-void main() {
-    vec2 coord = gl_PointCoord - vec2(0.5);
+            void main() {
+                vec2 coord = gl_PointCoord - vec2(0.5);
                 float dist = length(coord);
                 
                 if (dist > 0.5) {
                     discard;
                 }
                 gl_FragColor = vec4(v_color.rgb, v_color.a);
-}
+            }
         `;
-        
+
         // 编译着色器
         const vertexShader = this.compileShader(gl.VERTEX_SHADER, vertexShaderSource);
         const fragmentShader = this.compileShader(gl.FRAGMENT_SHADER, fragmentShaderSource);
-        
+
         // 创建着色器程序
         this.program = gl.createProgram();
         if (!this.program) {
             throw new Error('Failed to create WebGL program');
         }
-        
+
         gl.attachShader(this.program, vertexShader);
         gl.attachShader(this.program, fragmentShader);
         gl.linkProgram(this.program);
-        
+
         if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
             console.error('Unable to link WebGL program:', gl.getProgramInfoLog(this.program));
             return;
         }
-        
+
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
         gl.disable(gl.DEPTH_TEST);
-        
+
         const positionAttribute = gl.getAttribLocation(this.program, 'a_position');
         const colorAttribute = gl.getAttribLocation(this.program, 'a_color');
         const sizeAttribute = gl.getAttribLocation(this.program, 'a_size');
-        
+
         this.resolutionUniform = gl.getUniformLocation(this.program, 'u_resolution');
-        
+
         this.positionBuffer = gl.createBuffer();
         this.colorBuffer = gl.createBuffer();
         this.sizeBuffer = gl.createBuffer();
-    
+
         gl.useProgram(this.program);
-        
+
         gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, this.positions, gl.DYNAMIC_DRAW);
         gl.enableVertexAttribArray(positionAttribute);
         gl.vertexAttribPointer(positionAttribute, 2, gl.FLOAT, false, 0, 0);
-        
+
         gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, this.colors, gl.DYNAMIC_DRAW);
         gl.enableVertexAttribArray(colorAttribute);
         gl.vertexAttribPointer(colorAttribute, 4, gl.FLOAT, false, 0, 0);
-        
+
         gl.bindBuffer(gl.ARRAY_BUFFER, this.sizeBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, this.sizes, gl.DYNAMIC_DRAW);
         gl.enableVertexAttribArray(sizeAttribute);
         gl.vertexAttribPointer(sizeAttribute, 1, gl.FLOAT, false, 0, 0);
-        
+
         gl.uniform2f(this.resolutionUniform, this.cvs.width, this.cvs.height);
     }
-    
+
     private compileShader(type: number, source: string): WebGLShader {
         const gl = this.gl;
         const shader = gl.createShader(type);
         if (!shader) {
             throw new Error('Failed to create shader');
         }
-        
+
         gl.shaderSource(shader, source);
         gl.compileShader(shader);
-        
+
         if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
             const info = gl.getShaderInfoLog(shader);
             gl.deleteShader(shader);
             throw new Error(`Shader compile error: ${info}`);
         }
-        
+
         return shader;
     }
-    
+
     start(): void {
         this.candraw = true;
         this.animate();
     }
-    
+
     pause(): void {
         this.candraw = false;
     }
-    
+
     unmount(): void {
         this.exit = true;
         if (this.animationId) {
@@ -190,8 +197,6 @@ void main() {
         }
         window.removeEventListener('resize', this.resize.bind(this));
         this.candraw = false;
-        
-        // 清理WebGL资源
         const gl = this.gl;
         if (this.program) gl.deleteProgram(this.program);
         if (this.positionBuffer) gl.deleteBuffer(this.positionBuffer);
@@ -201,116 +206,156 @@ void main() {
             gl?.getExtension('WEBGL_lose_context')?.loseContext();
         }, 500);
     }
-    
-    async setColors(color: number[]): Promise<void> {
-        this.generatedColors = this._generateSimilarColors(color, 7, 20);
-        await this.initCircles();
+
+    async setColors(color: number[], duration: number = 1000): Promise<void> {
+        const newColors = this._generateSimilarColors(color, 7, 20);
+        if (this.circles.length === 0) {
+            this.generatedColors = newColors;
+            await this.initCircles();
+            return;
+        }
+        this.transitionDuration = duration;
+        this.transitionStartTime = performance.now();
+        this.isTransitioning = true;
+        for (let i = 0; i < this.circles.length; i++) {
+            const circle = this.circles[i];
+            const newRgb = newColors[i % newColors.length];
+
+            circle.targetColor = [
+                newRgb[0] / 255,
+                newRgb[1] / 255,
+                newRgb[2] / 255,
+                1
+            ];
+            circle.colorTransitionProgress = 0;
+        }
+
+        this.generatedColors = newColors;
+        lastColorSave = newColors;
     }
-    
+
     async initCircles(): Promise<void> {
         let d = 500;
         this.cvs.style.opacity = '0';
         this.circles = [];
-        
+
         for (let i = 0; i < this.generatedColors.length; i++) {
-            let r = window.innerWidth / 4* devicePixelRatio;
+            let r = window.innerWidth / 4 * devicePixelRatio;
             let x = this._getRandom(r, this.cvs.width - r);
             let y = this._getRandom(r, this.cvs.height - r);
             let dx = this._getRandom(window.innerWidth / -d, window.innerWidth / d) * devicePixelRatio;
             let dy = this._getRandom(window.innerWidth / -d, window.innerWidth / d) * devicePixelRatio;
-            
+
             const rgb = this.generatedColors[i];
             const rgba: [number, number, number, number] = [
                 rgb[0] / 255,
-                rgb[1] / 255, 
+                rgb[1] / 255,
                 rgb[2] / 255,
-                1 
+                1
             ];
-            
-            this.circles.push({ 
-                x, y, dx, dy, r, 
+
+            this.circles.push({
+                x, y, dx, dy, r,
                 color: rgba
             });
         }
-        
+
         this.circleCount = this.circles.length;
-        
-        // 重新分配数组大小
+
         this.positions = new Float32Array(this.circleCount * 2);
         this.colors = new Float32Array(this.circleCount * 4);
         this.sizes = new Float32Array(this.circleCount);
-        
-        // 更新缓冲区数据
+
         this.updateBuffers();
-        
-        // 重新配置WebGL缓冲区
+
         const gl = this.gl;
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, this.positions, gl.DYNAMIC_DRAW);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, this.colors, gl.DYNAMIC_DRAW);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.sizeBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, this.sizes, gl.DYNAMIC_DRAW);
+
         const positionAttribute = gl.getAttribLocation(this.program!, 'a_position');
         const colorAttribute = gl.getAttribLocation(this.program!, 'a_color');
         const sizeAttribute = gl.getAttribLocation(this.program!, 'a_size');
-        
+
         gl.useProgram(this.program!);
-        
-        // 重新绑定位置缓冲区
+
         gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, this.positions, gl.DYNAMIC_DRAW);
         gl.enableVertexAttribArray(positionAttribute);
         gl.vertexAttribPointer(positionAttribute, 2, gl.FLOAT, false, 0, 0);
-        
-        // 重新绑定颜色缓冲区
+
         gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, this.colors, gl.DYNAMIC_DRAW);
         gl.enableVertexAttribArray(colorAttribute);
         gl.vertexAttribPointer(colorAttribute, 4, gl.FLOAT, false, 0, 0);
-        
-        // 重新绑定大小缓冲区
+
         gl.bindBuffer(gl.ARRAY_BUFFER, this.sizeBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, this.sizes, gl.DYNAMIC_DRAW);
         gl.enableVertexAttribArray(sizeAttribute);
         gl.vertexAttribPointer(sizeAttribute, 1, gl.FLOAT, false, 0, 0);
-        
+
         this.cvs.style.opacity = '1';
     }
-    
+
+    private ensureBufferSize(): void {
+        const gl = this.gl;
+        const neededPositionSize = this.circleCount * 2 * Float32Array.BYTES_PER_ELEMENT;
+        const neededColorSize = this.circleCount * 4 * Float32Array.BYTES_PER_ELEMENT;
+        const neededSizeSize = this.circleCount * Float32Array.BYTES_PER_ELEMENT;
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
+        const currentPositionSize = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
+        if (currentPositionSize < neededPositionSize) {
+            gl.bufferData(gl.ARRAY_BUFFER, this.positions, gl.DYNAMIC_DRAW);
+        }
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffer);
+        const currentColorSize = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
+        if (currentColorSize < neededColorSize) {
+            gl.bufferData(gl.ARRAY_BUFFER, this.colors, gl.DYNAMIC_DRAW);
+        }
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.sizeBuffer);
+        const currentSizeSize = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
+        if (currentSizeSize < neededSizeSize) {
+            gl.bufferData(gl.ARRAY_BUFFER, this.sizes, gl.DYNAMIC_DRAW);
+        }
+    }
+
     private updateBuffers(): void {
-        // 更新位置、颜色和大小数据
+        if (this.circleCount === 0) return;
         for (let i = 0; i < this.circleCount; i++) {
             const circle = this.circles[i];
             const idx = i * 2;
             const colorIdx = i * 4;
-            
-            // 位置数据
+
             this.positions[idx] = circle.x;
             this.positions[idx + 1] = circle.y;
-            
-            // 颜色数据（已经是0-1范围的RGBA）
+
             this.colors[colorIdx] = circle.color[0];
             this.colors[colorIdx + 1] = circle.color[1];
             this.colors[colorIdx + 2] = circle.color[2];
             this.colors[colorIdx + 3] = circle.color[3];
-            
-            // 大小数据
             this.sizes[i] = circle.r;
         }
-        
-        // 上传数据到GPU
+
         const gl = this.gl;
-        
+        this.ensureBufferSize();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.positions);
-        
         gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.colors);
-        
         gl.bindBuffer(gl.ARRAY_BUFFER, this.sizeBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.sizes);
     }
-    
+
     private updateCirclePositions(): void {
         for (let i = 0; i < this.circleCount; i++) {
             const circle = this.circles[i];
             const idx = i * 2;
-            
+
             // 边界检测
             if (circle.x + circle.r > this.cvs.width || circle.x - circle.r < 0) {
                 circle.dx = -circle.dx;
@@ -318,100 +363,164 @@ void main() {
             if (circle.y + circle.r > this.cvs.height || circle.y - circle.r < 0) {
                 circle.dy = -circle.dy;
             }
-            
+
             // 更新位置
             circle.x += circle.dx;
             circle.y += circle.dy;
-            
+
             this.positions[idx] = circle.x;
             this.positions[idx + 1] = circle.y;
         }
     }
-    
+
+    private updateCircleColors(): void {
+        if (!this.isTransitioning) return;
+
+        const now = performance.now();
+        const elapsed = now - this.transitionStartTime;
+        let progress = Math.min(elapsed / this.transitionDuration, 1);
+
+        // 使用ease-out缓动函数，让过渡更自然
+        progress = 1 - Math.pow(1 - progress, 3);
+
+        let allCompleted = true;
+
+        for (let i = 0; i < this.circleCount; i++) {
+            const circle = this.circles[i];
+            const colorIdx = i * 4;
+
+            // 如果有目标颜色，进行插值
+            if (circle.targetColor) {
+                // 线性插值颜色
+                this.colors[colorIdx] = this.lerp(circle.color[0], circle.targetColor[0], progress);
+                this.colors[colorIdx + 1] = this.lerp(circle.color[1], circle.targetColor[1], progress);
+                this.colors[colorIdx + 2] = this.lerp(circle.color[2], circle.targetColor[2], progress);
+                this.colors[colorIdx + 3] = 1; // Alpha保持不变
+
+                // 更新当前颜色
+                if (progress === 1) {
+                    circle.color = [...circle.targetColor];
+                    circle.targetColor = undefined;
+                    circle.colorTransitionProgress = undefined;
+                } else {
+                    allCompleted = false;
+                }
+            } else {
+                // 保持现有颜色
+                this.colors[colorIdx] = circle.color[0];
+                this.colors[colorIdx + 1] = circle.color[1];
+                this.colors[colorIdx + 2] = circle.color[2];
+                this.colors[colorIdx + 3] = circle.color[3];
+            }
+        }
+
+        // 如果所有过渡都完成了，更新状态
+        if (allCompleted) {
+            this.isTransitioning = false;
+        }
+
+        // 上传更新后的颜色数据到GPU
+        const gl = this.gl;
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffer);
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.colors);
+    }
+
+    private lerp(start: number, end: number, t: number): number {
+        return start * (1 - t) + end * t;
+    }
+
     private animate(): void {
         if (this.exit) return;
         this.animationId = requestAnimationFrame(this.animate.bind(this));
-        
+
         if (!this.candraw) return;
-        
+
         const now = performance.now();
         if (now - this.lastFrameTime < 16) return; // ~60fps
         this.lastFrameTime = now;
-        
+
         // 更新圆形位置
         this.updateCirclePositions();
-        
+
+        // 更新圆形颜色（处理过渡）
+        this.updateCircleColors();
+
         // 上传新的位置数据到GPU
         const gl = this.gl;
         gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.positions);
-        
+
         // 清除画布
         gl.clearColor(0, 0, 0, 0);
         gl.clear(gl.COLOR_BUFFER_BIT);
-        
+
         // 绘制点（圆形）
         gl.drawArrays(gl.POINTS, 0, this.circleCount);
     }
-    
+
     resize(): void {
         this.cvs.width = window.innerWidth * devicePixelRatio;
         this.cvs.height = window.innerHeight * devicePixelRatio;
-        
+
         // 更新WebGL视口和分辨率
         this.gl.viewport(0, 0, this.cvs.width, this.cvs.height);
-        
+
         if (this.program && this.resolutionUniform) {
             this.gl.useProgram(this.program);
             this.gl.uniform2f(this.resolutionUniform, this.cvs.width, this.cvs.height);
         }
-        
+
         // 重新初始化圆形（因为画布大小变了）
         this.initCircles();
     }
-    
+
     private _getRandom(min: number, max: number): number {
         return Math.random() * (max - min) + min;
     }
-    
+
     private _generateSimilarColors(baseColor: number[], count: number, diff: number): number[][] {
         function getRandomOffset(maxDiff: number): number {
             return Math.floor(Math.random() * (maxDiff * 2 + 1)) - maxDiff;
         }
-        
+
         function clampValue(value: number, min: number, max: number): number {
             return Math.min(Math.max(value, min), max);
         }
-        
+
         if (!Array.isArray(baseColor) || baseColor.length !== 3 ||
             baseColor.some(c => c < 0 || c > 255)) {
             throw new Error('Invalid base color');
         }
-        
+
         if (typeof count !== 'number' || count < 1) {
             throw new Error('Invalid count');
         }
-        
+
         if (typeof diff !== 'number' || diff < 0 || diff > 100) {
             throw new Error('Invalid diff');
         }
-        
+
         const maxDiff = Math.round((diff / 100) * 255);
         const colors: number[][] = [];
-        
+
         for (let i = 0; i < count; i++) {
             const r = baseColor[0] + getRandomOffset(maxDiff);
             const g = baseColor[1] + getRandomOffset(maxDiff);
             const b = baseColor[2] + getRandomOffset(maxDiff);
-            
+
             colors.push([
                 clampValue(r, 0, 255),
                 clampValue(g, 0, 255),
                 clampValue(b, 0, 255)
             ]);
         }
-        
+
         lastColorSave = colors;
         return colors;
+    }
+
+    // 设置过渡持续时间（毫秒）
+    setTransitionDuration(duration: number): void {
+        this.transitionDuration = duration;
     }
 }
