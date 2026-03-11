@@ -1,12 +1,19 @@
 <template>
     <div class="player">
         <div class="drag-area"></div>
-        <button class="close" @click="appStore.toggleShowMusicPlayer()">
-            <Icon icon="mingcute:down-line" />
-        </button>
 
+        <div class="global-set">
+            <button @click="handleBackgroundMenu($event)">
+                <Icon icon="fluent:color-background-24-regular" />
+            </button>
+            <button @click="appStore.toggleShowMusicPlayer()">
+                <Icon icon="fluent:chevron-down-24-regular" />
+            </button>
+        </div>
         <div class="background">
-            <DynamicBackgroud :cover="playingSongCover" :matchColor="matchColor"></DynamicBackgroud>
+            <DynamicBackgroud :cover="playingSongCover" :matchColor="matchColor"
+                v-if="configStore.musicBackgroundMode === 'dynamic'"></DynamicBackgroud>
+            <CoverBackground v-else :cover="playingSongCover" :matchColor="matchColor"></CoverBackground>
         </div>
 
         <div class="song" :class="{ 'song-center': !showRight }">
@@ -70,9 +77,7 @@
 
         <div class="right-display" v-if="showRight">
             <Lyric v-if="infoDisplayMode === 'lyric' && playingLyric" :key="onplay?.song.id" :lyric="playingLyric"
-                @saveLyric="saveLyric"
-                @lyricSeek="handleLyricSeek"
-            >
+                @saveLyric="saveLyric" @lyricSeek="handleLyricSeek">
             </Lyric>
             <PlaylistView v-if="infoDisplayMode === 'list'"></PlaylistView>
         </div>
@@ -92,7 +97,7 @@
 
         <span class="tip"
             style="position: absolute;left: 1rem;bottom: 1rem;color: white;opacity: 0.5;z-index: 9999;font-size: 0.9rem;">
-            Miotto MusicPlayer Beta v0.6.5
+            Miotto MusicPlayer Beta v0.7.1
         </span>
 
     </div>
@@ -111,9 +116,11 @@ import VueSlider from 'vue-slider-component'
 import { mlyric2Lrc } from '@renderer/utils/lyric';
 import FunctionalWindows from '../windows';
 import DynamicBackgroud from './DynamicBackgroud.vue';
+import useConfigStore from '@renderer/store/config';
+import CoverBackground from './CoverBackground.vue';
 const vueInstance = getCurrentInstance()
 const player = window.$player
-
+const configStore = useConfigStore()
 const appStore = useAppStore()
 const playerStore = usePlayerStore()
 const onplay = computed(() => {
@@ -263,7 +270,18 @@ function handleCoverMenu(event: MouseEvent) {
     })
 }
 
-function handleLyricSeek(timems:number){
+function handleBackgroundMenu(event:MouseEvent){
+    FunctionalWindows.showContextMenu({
+        x:event.x,
+        y:event.y,
+        items:[
+            {label:'使用动态背景',onClick:()=>configStore.config('musicBackgroundMode','dynamic'),icon:'fluent:fluid-20-filled'},
+            {label:'使用封面背景',onClick:()=>configStore.config('musicBackgroundMode','cover'),icon:"fluent:circle-image-20-regular"},
+        ]
+    })
+}
+
+function handleLyricSeek(timems: number) {
     player.control.seek(timems / 1000)
 }
 </script>
@@ -284,27 +302,34 @@ function handleLyricSeek(timems:number){
     --slider-rail-color: rgba(255, 255, 255, 0.35);
     --slider-process-color: white;
 
-    .close {
-        background: none;
-        border: none;
-        width: 2.5rem;
-        height: 2.5rem;
+    .global-set {
         position: absolute;
-        font-size: 2rem;
-        color: white;
+        right: 1.4rem;
+        top: 1.1rem;
         display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 1300;
-        right: 1.75rem;
-        top: 1.75rem;
-        border-radius: 0.4rem;
-        -webkit-app-region: no-drag;
+        flex-direction: row;
+        gap: 0.5rem;
+
+        button {
+            background: none;
+            border: none;
+            width: 2.5rem;
+            height: 2.5rem;
+            font-size: 2rem;
+            color: rgba(255, 255, 255, 0.773);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1300;
+            border-radius: 0.4rem;
+            -webkit-app-region: no-drag;
+        }
+
+        button:hover {
+            backdrop-filter: brightness(1.4);
+        }
     }
 
-    .close:hover {
-        backdrop-filter: brightness(1.4);
-    }
 }
 
 .drag-area {

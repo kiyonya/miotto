@@ -17,7 +17,9 @@ interface ConfigState {
     enableAudioFade:boolean,
     audioFadeDuration:number,
 
-    autoplayWhenAppStart:boolean
+    autoplayWhenAppStart:boolean,
+
+    musicBackgroundMode:'dynamic' | 'cover'
 }
 
 const useConfigStore = defineStore('config', {
@@ -34,7 +36,8 @@ const useConfigStore = defineStore('config', {
         enableEqualizer:false,
         enableAudioFade:true,
         audioFadeDuration:500,
-        autoplayWhenAppStart:false
+        autoplayWhenAppStart:false,
+        musicBackgroundMode:'dynamic'
     }),
     actions:{
         toggleAppTheme(){
@@ -52,6 +55,9 @@ const useConfigStore = defineStore('config', {
         },
         updateEqualizerGain(gains:number[]){
             this.equalizerGains = gains.slice(0,10)
+        },
+        config<K extends keyof ConfigState>(key:K,value:ConfigState[K]){
+            this.$state[key] = value
         }
     },
     persist: {

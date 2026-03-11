@@ -126,6 +126,7 @@ onUnmounted(() => {
     border-radius: var(--br-2);
     gap: 0.3rem;
     visibility: hidden;
+    -webkit-app-region: no-drag;
 }
 
 .split {
