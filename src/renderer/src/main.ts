@@ -13,6 +13,7 @@ import WAudio from './lib/waudio'
 import { Player } from './lib/player'
 import { setupKeyListener } from './script/keytap'
 import { addRemoteControlHandler } from './script/remote'
+import useConfigStore from './store/config'
 
 const globalProperties = {
     install(app: App) {
@@ -110,6 +111,8 @@ async function startApp() {
     const player = new Player(waudio)
     app.config.globalProperties.$player = player
     window.$player = player
+    //@ts-ignore
+    window.$config = useConfigStore().config
     setupKeyListener()
     addRemoteControlHandler()
     window.emitter.post('app::renderMount', null)

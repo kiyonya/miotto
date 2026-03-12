@@ -9,12 +9,13 @@ declare module 'vue' {
         $fmtbr:(bitrate:number)=>string,
         $cmpScrollCenterDistance : (item: HTMLElement, container: HTMLElement)=>number
         $player:Player,
-
+        
     }
 }
 declare global {
     interface Window{
         $player:Player
+        $config:(key:string,value:any)=>void
     }
 }
 export { }

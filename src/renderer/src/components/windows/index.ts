@@ -6,6 +6,7 @@ import ImportBiliMusic from './ImportBiliMusic.vue'
 import ContextMenu from "./ContextMenu.vue";
 import Equalizer from './Equalizer.vue'
 import CreateDevProject from './CreateDevProject.vue'
+import Fish from './Fish.vue'
 interface ContextMenuItems {
   label?: string,
   icon?: string,
@@ -88,19 +89,19 @@ export default abstract class FunctionalWindows {
     })
   }
 
-  public static showContextMenu(options: ContextMenuCreateOptions, onMounted?: (app: App<Element>) => void, onUnmounted?: () => void): {withFocus:(el:HTMLElement)=>void} {
+  public static showContextMenu(options: ContextMenuCreateOptions, onMounted?: (app: App<Element>) => void, onUnmounted?: () => void): { withFocus: (el: HTMLElement) => void } {
     const mountEl = document.createElement('div')
     document.body.appendChild(mountEl)
     const menu = createApp(ContextMenu, {
       ...options
     })
-    let focusEl:HTMLElement | null = null
-    const withFocus = (el:HTMLElement)=>{
+    let focusEl: HTMLElement | null = null
+    const withFocus = (el: HTMLElement) => {
       el.tabIndex = 0
       focusEl = el
       el.focus()
     }
-    const removeFocus = ()=>{
+    const removeFocus = () => {
       focusEl?.removeAttribute('tabindex')
       focusEl?.blur()
       focusEl = null
@@ -129,7 +130,7 @@ export default abstract class FunctionalWindows {
       onMounted(menu)
     }
     return {
-      withFocus:withFocus
+      withFocus: withFocus
     }
   }
 
@@ -156,6 +157,21 @@ export default abstract class FunctionalWindows {
           app.unmount()
           container.remove()
           reject('canceled')
+        }
+      })
+      document.body.appendChild(container)
+      app.mount(container)
+    })
+  }
+
+  public static showFishGame() {
+    const container = document.createElement('div')
+    return new Promise<boolean>((resolve, _) => {
+      const app = createApp(Fish, {
+        onResult: (r: boolean) => {
+          app.unmount()
+          container.remove()
+          resolve(r)
         }
       })
       document.body.appendChild(container)

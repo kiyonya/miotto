@@ -19,7 +19,8 @@ interface ConfigState {
 
     autoplayWhenAppStart:boolean,
 
-    musicBackgroundMode:'dynamic' | 'cover'
+    musicBackgroundMode:'dynamic' | 'cover',
+    letsFishUp:boolean,
 }
 
 const useConfigStore = defineStore('config', {
@@ -37,7 +38,10 @@ const useConfigStore = defineStore('config', {
         enableAudioFade:true,
         audioFadeDuration:500,
         autoplayWhenAppStart:false,
-        musicBackgroundMode:'dynamic'
+        musicBackgroundMode:'dynamic',
+
+
+        letsFishUp:false
     }),
     actions:{
         toggleAppTheme(){

@@ -5,6 +5,7 @@ import { usePlayerStore } from '@renderer/store/player'
 import { usePlaylistStore } from '@renderer/store/playlist'
 import useConfigStore from '@renderer/store/config'
 import md5 from 'blueimp-md5'
+import FunctionalWindows from '@renderer/components/windows'
 
 export class Player {
 
@@ -43,21 +44,21 @@ export class Player {
             else { this.waudio.play() }
         },
         volume: (volume: number) => this.waudio.volume(volume),
-        mute:()=>{
+        mute: () => {
             this.waudio.mute()
         },
-        unmute:()=>{
+        unmute: () => {
             this.waudio.unmute()
         },
-        toggleMute:()=>{
+        toggleMute: () => {
             const isMute = this.waudio.toggleMute()
-            window.emitter.post('audio::mute',isMute)
+            window.emitter.post('audio::mute', isMute)
         },
-        next:()=>this.next(),
-        previous:()=>this.previous(),
-        playMode:(playMode:AppTypes.PlayMode)=>this.playerStore.setPlayMode(playMode),
-        switchPlayMode:()=>this.playerStore.switchPlaymode(),
-        movePlaylistItem:(from:number,to:number)=>this.playerStore.movePlaylistItem(from,to)
+        next: () => this.next(),
+        previous: () => this.previous(),
+        playMode: (playMode: AppTypes.PlayMode) => this.playerStore.setPlayMode(playMode),
+        switchPlayMode: () => this.playerStore.switchPlaymode(),
+        movePlaylistItem: (from: number, to: number) => this.playerStore.movePlaylistItem(from, to)
     }
 
     constructor(waudio?: WAudio) {
@@ -198,8 +199,13 @@ export class Player {
     }
 
     public async playTrack(trackId: AppTypes.ITrackId, autoPlay: boolean = true) {
-        this.playingId = trackId
 
+        if (this.configStore.letsFishUp && Math.random() > 0.5) {
+            const canAlbumFished = await FunctionalWindows.showFishGame()
+            if (!canAlbumFished) { return }
+        }
+
+        this.playingId = trackId
         window.emitter.post('player::playSong', this._noProxy(trackId))
 
         if (trackId.platform === 'ncm') {

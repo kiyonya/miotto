@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { KeepAlive } from 'vue';
 import Frame from './components/Frame.vue';
 import MusicPlayer from './components/musicplayer/MusicPlayer.vue';
 import Side from './components/Side.vue';
@@ -7,6 +6,7 @@ import SidePlaylist from './components/SidePlaylist.vue';
 import Tray from './components/Tray.vue';
 import { useAppStore } from './store/app';
 import useConfigStore from './store/config';
+
 
 const configStore = useConfigStore()
 function changeTheme() {
@@ -46,9 +46,6 @@ const appStore = useAppStore()
   <Transition name="maskfade">
     <div class="mask" v-if="appStore.showSidePlaylist"></div>
   </Transition>
-
-
-
 </template>
 <style scoped>
 .musicplayer-enter-active,
