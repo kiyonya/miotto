@@ -13,13 +13,12 @@ interface Buttons {
 
 function Title(): JSX.Element {
     return(<div className="title">
-        <div><Mplayer10 />
-        <p>114514</p></div>
-        <div>
-            <Button className="titleButton"></Button>
-            <Button className="titleButton"></Button>
-            <Button className="titleButton"></Button>
-        </div>
+        <div><Mplayer10 /><p>114514</p></div>
+            <div className="titleButtons">
+                <TitleBar.Minimize></TitleBar.Minimize>
+                <TitleBar.Maximize></TitleBar.Maximize>
+                <TitleBar.Close></TitleBar.Close>
+            </div>
         </div>
     )
 }
