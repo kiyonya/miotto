@@ -1,4 +1,4 @@
-import { useReducer, useEffect, useState, type JSX } from "react"
+import { useReducer, useEffect, type JSX } from "react"
 import './App.css'
 import '@react95/core/themes/win95.css';
 import setListeners from "./handleListener.js"
@@ -11,6 +11,19 @@ interface Buttons {
     isPause: boolean;
 }
 
+function Title(): JSX.Element {
+    return(<div className="title">
+        <div><Mplayer10 />
+        <p>114514</p></div>
+        <div>
+            <Button className="titleButton"></Button>
+            <Button className="titleButton"></Button>
+            <Button className="titleButton"></Button>
+        </div>
+        </div>
+    )
+}
+
 function Options():JSX.Element {
     const list: Array<string> = ["看看", "猫猫", "cpp"];
     const renderList = list.map(( option ) =>  <li> { option } </li>);
@@ -19,29 +32,27 @@ function Options():JSX.Element {
 }
 
 function PlayerFrame():JSX.Element {
-
     return(
     <>  
-        <div className="titleContainer"><TitleBar className="titleBar" title={"咕咕嘎嘎"}><Mplayer10 className="titleIcon"/></TitleBar></div>
+        <div className="titleContainer"><TitleBar className="titleBar" title={" "}><Title /></TitleBar></div>
         <Options />
     </>)
 }
 
-function Buttons( { isPause }: Buttons ):JSX.Element {
-    
+function Buttons( { isPause }: Buttons ):JSX.Element { 
     function handlePause() {
         window.port.invoke(isPause? "ctl:player::pause" : "ctl:player::play")
     }
 
-    return(<div>
-        <Button onClick={ handlePause }>{ isPause? "*" : "&"}</Button>
-        <Button><Icon icon="material-symbols:play-arrow"></Icon></Button>
+    return(<div className="buttons">
+        <Button className="button" onClick={ handlePause }><Icon className="icon"   icon="material-symbols:play-arrow"></Icon></Button>
+        <Button className="button"></Button>
+        <Button className="button"></Button>
+        
     </div>)
 }
 
 function Player() :JSX.Element{
-    const defaultState = {width: window.innerWidth, height: window.innerHeight}
-    const [windowState, setWindowState] = useState(defaultState)
     const [playerState, dispatch] = useReducer(reducer, initialization)
     
     useEffect(()=> {
@@ -57,14 +68,12 @@ function Player() :JSX.Element{
     }
 
     return (
-        <div className="main" style={{width: windowState.width, height: windowState.height}} onChange={()=>{setWindowState({width: window.innerWidth, height: window.innerHeight})}}>
-            <Frame bgColor={ '$material' } boxShadow= {'$out'}>
+            <Frame className="main" bgColor={ '$material' } boxShadow= {'$out'}>
                 <PlayerFrame />
                 <div className="progress"><Range value={ playerState.currentTime/playerState.totalTime*100 } onChange={handleProgress}>
                 </Range></div>
                 <Buttons isPause={ playerState.isPlaying }></Buttons>
             </Frame>
-        </div>
     )
 }
 

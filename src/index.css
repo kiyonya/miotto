@@ -1,6 +1,10 @@
 @font-face {
   src: "./assets/vertopal.com_sserife.woff2";
-  font-family: "default serif";
+  font-family: "default-serif";
+}
+
+* {
+  font-family: "default-serif";
 }
 
 body {
@@ -10,5 +14,5 @@ body {
   align-items: center;
   overflow: hidden;
   margin: 0;
-  font-family: default serif;
+  resize: both;
 }
