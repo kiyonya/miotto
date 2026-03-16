@@ -17,7 +17,7 @@ interface trackName {
 
 function Title( { trackName }: trackName ): JSX.Element {
     return(<div className="title">
-        <div className="titleHead"><Mplayer15 variant="16x16_4" /><p>{ trackName + "（媒体播放器）"}</p></div>
+        <div className="titleHead"><Mplayer15 variant="16x16_4" /><p>{ trackName + " - 媒体播放器（正在播放）"}</p></div>
             <div className="titleButtons">
                 <TitleBar.Minimize className="titleMinimzie"></TitleBar.Minimize>
                 <TitleBar.Maximize></TitleBar.Maximize>
@@ -48,9 +48,18 @@ function Buttons( { isPause }: Buttons ):JSX.Element {
     }
 
     return(<div className="buttons">
-        <Button className="button" onClick={ handlePause }><Icon className="icon"   icon="material-symbols:play-arrow"></Icon></Button>
-        <Button className="button"></Button>
-        <Button className="button"></Button>
+        <div><Button className="button" onClick={ handlePause }></Button>
+            <Button className="button"></Button>
+            <Button className="button"></Button>
+        </div>
+        <div><Button className="button"></Button>
+            <Button className="button"></Button>
+            <Button className="button"></Button>
+            <Button className="button"></Button>
+        </div>
+        <div><Button className="button"></Button>
+            <Button className="button"></Button>
+        </div>
         
     </div>)
 }
@@ -77,6 +86,7 @@ function Player() :JSX.Element{
                 <div className="progress"><Range value={ playerState.currentTime/playerState.totalTime*100 } onChange={ handleProgress }>
                 </Range></div>
                 <Buttons isPause={ playerState.isPlaying }></Buttons>
+                <div className="tiem"></div>
             </Frame>
     )
 }

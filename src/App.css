@@ -5,6 +5,8 @@
     flex-flow: column nowrap;
 }
 
+/*======================================================================================================*/
+
 .titleBar {
     margin: 3px;
     margin-left: 2.9px;
@@ -61,6 +63,8 @@
     margin-left: 5px;
 }
 
+/*======================================================================================================*/
+
 .options {
     margin-top: 0;
     margin: 0 5px 0 5px;
@@ -78,29 +82,42 @@
 }
 
 .progress {
-    margin: 0 5px 0 5px;
+    margin: 0 5px 0px 5px;
+    padding-top: 20px;
+    padding-bottom: 30px;
     border-top: solid 2px rgba(135, 135, 135, 0.77);
     filter: blur(0.5px);
     border-bottom: solid 1px black;
 }
 
 .buttons {
-    position: absolute;
     display: flex;
-    bottom: 5px;
+    width: 100%;
+    margin-left: 6px;
+    margin-right: 6px;
+    padding-top: 3px;
+    padding-left: 2px;
+    border-top: 2px solid white;
 }
 
 .buttons .button {
-    margin: 10px 0 10px 0px;
-    width: 30px;
-    height: 30px;
-    border-right: 1px solid;
-    border-bottom: 1px solid;
-    border-left: 2px solid;
+    padding-left: 15px;
+    height: 33px;
+    border-right: 2px solid black;
+    border-bottom: 2px solid;
+    border-left: 1px solid white;
 }
 
-.buttons + .button {
-    margin-left: 10px;
+.buttons .button:active {
+    padding-left: 15px;
+    height: 33px;
+    border-right: 2px solid black;
+    border-bottom: 2px solid;
+    border-left: 1px solid white;
+}
+
+.buttons :not( div:nth-child(1), button ) {
+    margin-left: 12px;
 }
 
 .icon {

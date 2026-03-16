@@ -31,7 +31,6 @@ function addListeners(dispatch: React.ActionDispatch<[Action]>): void{
     })
 
     window.port.on("event:playing::songUpdate", (_, song)=> {
-        console.log("逐一发送歌曲信息!",song)
         dispatch({
             type: "setTrackInfor",
             trackInfor: song,
