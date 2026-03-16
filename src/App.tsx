@@ -4,18 +4,22 @@ import '@react95/core/themes/win95.css';
 import setListeners from "./handleListener.js"
 import { reducer, initialization } from "./reducer.js"
 import { Range, TitleBar, Frame, Button } from "@react95/core"
-import { Mplayer10 } from "@react95/icons"
+import { Mplayer15 } from "@react95/icons"
 import { Icon } from "@iconify/react"
 
 interface Buttons {
     isPause: boolean;
 }
 
-function Title(): JSX.Element {
+interface trackName {
+    trackName: string;
+}
+
+function Title( { trackName }: trackName ): JSX.Element {
     return(<div className="title">
-        <div><Mplayer10 /><p>114514</p></div>
+        <div className="titleHead"><Mplayer15 variant="16x16_4" /><p>{ trackName + "（媒体播放器）"}</p></div>
             <div className="titleButtons">
-                <TitleBar.Minimize></TitleBar.Minimize>
+                <TitleBar.Minimize className="titleMinimzie"></TitleBar.Minimize>
                 <TitleBar.Maximize></TitleBar.Maximize>
                 <TitleBar.Close></TitleBar.Close>
             </div>
@@ -30,10 +34,10 @@ function Options():JSX.Element {
     <ul className= "options"> { renderList } </ul>)
 }
 
-function PlayerFrame():JSX.Element {
+function PlayerFrame( { trackName }: trackName):JSX.Element {
     return(
     <>  
-        <div className="titleContainer"><TitleBar className="titleBar" title={" "}><Title /></TitleBar></div>
+        <div className="titleContainer"><TitleBar className="titleBar" title={" "}><Title trackName= {trackName}/></TitleBar></div>
         <Options />
     </>)
 }
@@ -59,6 +63,7 @@ function Player() :JSX.Element{
     },[])
 
     function handleProgress(e: React.ChangeEvent<HTMLInputElement,HTMLInputElement>) :void{
+        if(!playerState){ throw new Error("incomplete initialization")}
         let progress = isNaN(Number(e.target.value)) ? playerState.currentTime : Number(e.target.value)           
         dispatch({
             type: "setProgress",
@@ -68,8 +73,8 @@ function Player() :JSX.Element{
 
     return (
             <Frame className="main" bgColor={ '$material' } boxShadow= {'$out'}>
-                <PlayerFrame />
-                <div className="progress"><Range value={ playerState.currentTime/playerState.totalTime*100 } onChange={handleProgress}>
+                <PlayerFrame trackName={ (playerState.trackInfor===null)? "罟罟冠啊噶" : playerState.trackInfor.name  }/>
+                <div className="progress"><Range value={ playerState.currentTime/playerState.totalTime*100 } onChange={ handleProgress }>
                 </Range></div>
                 <Buttons isPause={ playerState.isPlaying }></Buttons>
             </Frame>

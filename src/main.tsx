@@ -3,10 +3,6 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import Player from './App.tsx'
 
-
-
-
-
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Player />

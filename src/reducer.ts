@@ -1,25 +1,28 @@
-export interface AudioState {
+export interface AudioState{
     currentTime: number,
     name: string,
     isPlaying: boolean,
-    totalTime: number
+    totalTime: number,
+    trackInfor: MiottoTypes.ISong | null,
 }   
 
 export interface Action {
     type: string,
     isPlaying?: boolean,
-    currentTime?: number
-    totalTime?: number
+    currentTime?: number,
+    totalTime?: number,
+    trackInfor?: MiottoTypes.ISong,
 }
 
-export const initialization: AudioState = {
+export const initialization: AudioState= {
     currentTime: 0,
     name: "",
     isPlaying: false,
     totalTime: 0,
+    trackInfor: null,
 }
 
-export function reducer(state: AudioState, actions: Action){
+export function reducer(state: AudioState , actions: Action){
     switch(actions.type){
             case "isPause": {
                 if( actions.isPlaying === undefined ){ throw new Error("no argments!") }
@@ -47,6 +50,12 @@ export function reducer(state: AudioState, actions: Action){
                     ...state,
                     currentTime: actions.currentTime
                 }             
+            }case "setTrackInfor": {
+                if( !actions.trackInfor ){ throw new Error("undefined trackInformation!") }
+                return{
+                    ...state,
+                    trackInfor: actions.trackInfor,
+                }
             }
             default :{
                 throw new Error("undefined type")

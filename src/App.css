@@ -7,9 +7,14 @@
 
 .titleBar {
     margin: 3px;
-    margin-left: 2px;
-    transform: translateY(3px);
+    margin-left: 2.9px;
+    transform: translateY(0.5px);
     
+}
+
+.titleHead {
+    position: relative;
+    bottom: 3.9px;
 }
 
 .titleContainer {
@@ -27,18 +32,29 @@
 .title p {
     display: inline;
     margin: 0px;
+    font-size: 20px;
+    padding: 0;
+    position: relative;
+    bottom: 2px;
 }
 
 .titleButtons {
     display: flex;
+    flex-flow: row nowrap;
     margin-right: 4px;
-    width: 65px;
+    width: 70px;
     height: 20px;
 }
 
 .titleButtons * {
     transform: scale(115%);
     margin: 3px;
+    border-color: black black inherit inherit;
+    border-width: 1.5px 1.5px 1px 1px;
+}
+
+.title .titleButtons .titleMinimzie {
+    margin-right: 3px;
 }
 
 .titleButtons *:nth-child(3) {
@@ -70,6 +86,7 @@
 
 .buttons {
     position: absolute;
+    display: flex;
     bottom: 5px;
 }
 
@@ -86,3 +103,6 @@
     margin-left: 10px;
 }
 
+.icon {
+    border: 2px solid black;
+}
