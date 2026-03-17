@@ -1,12 +1,16 @@
 import { useReducer, useEffect, type JSX } from "react"
-import './App.css'
-import '@react95/core/themes/win95.css';
-import setListeners from "./handleListener.js"
-import { reducer, initialization } from "./reducer.js"
-import { Range, TitleBar, Frame, Button } from "@react95/core"
+import { Range, TitleBar, Frame } from "@react95/core"
 import { Mplayer15 } from "@react95/icons"
 import { Icon } from "@iconify/react"
 
+import './App.css'
+import '@react95/core/themes/win95.css';
+
+import setListeners from "./handleListener.js"
+import { reducer, initialization } from "./reducer.js"
+
+import Buttons from "./components/Buttons.js"
+import Process from "./components/Process.js"
 interface Buttons {
     isPause: boolean;
 }
@@ -42,28 +46,6 @@ function PlayerFrame( { trackName }: trackName):JSX.Element {
     </>)
 }
 
-function Buttons( { isPause }: Buttons ):JSX.Element { 
-    function handlePause() {
-        window.port.invoke(isPause? "ctl:player::pause" : "ctl:player::play")
-    }
-
-    return(<div className="buttons">
-        <div><Button className="button" onClick={ handlePause }></Button>
-            <Button className="button"></Button>
-            <Button className="button"></Button>
-        </div>
-        <div><Button className="button"></Button>
-            <Button className="button"></Button>
-            <Button className="button"></Button>
-            <Button className="button"></Button>
-        </div>
-        <div><Button className="button"></Button>
-            <Button className="button"></Button>
-        </div>
-        
-    </div>)
-}
-
 function Player() :JSX.Element{
     const [playerState, dispatch] = useReducer(reducer, initialization)
     
@@ -71,20 +53,10 @@ function Player() :JSX.Element{
         setListeners(dispatch)
     },[])
 
-    function handleProgress(e: React.ChangeEvent<HTMLInputElement,HTMLInputElement>) :void{
-        if(!playerState){ throw new Error("incomplete initialization")}
-        let progress = isNaN(Number(e.target.value)) ? playerState.currentTime : Number(e.target.value)           
-        dispatch({
-            type: "setProgress",
-            currentTime: progress/100*playerState.totalTime
-        })
-    }
-
     return (
             <Frame className="main" bgColor={ '$material' } boxShadow= {'$out'}>
                 <PlayerFrame trackName={ (playerState.trackInfor===null)? "罟罟冠啊噶" : playerState.trackInfor.name  }/>
-                <div className="progress"><Range value={ playerState.currentTime/playerState.totalTime*100 } onChange={ handleProgress }>
-                </Range></div>
+                <Process value={ playerState.currentTime/playerState.totalTime*100 } dispatch={ dispatch } playerState={ { currentTime: playerState.currentTime, totalTime: playerState.totalTime} }></Process>
                 <Buttons isPause={ playerState.isPlaying }></Buttons>
                 <div className="tiem"></div>
             </Frame>

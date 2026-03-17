@@ -100,6 +100,10 @@
     border-top: 2px solid white;
 }
 
+.buttons div {
+    display: flex;
+}
+
 .buttons .button {
     padding-left: 15px;
     height: 33px;
@@ -119,6 +123,8 @@
 .buttons :not( div:nth-child(1), button ) {
     margin-left: 12px;
 }
+
+/*======================================================================================================*/
 
 .icon {
     border: 2px solid black;
