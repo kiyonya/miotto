@@ -1,7 +1,6 @@
 import { useReducer, useEffect, type JSX } from "react"
-import { Range, TitleBar, Frame } from "@react95/core"
+import { TitleBar, Frame } from "@react95/core"
 import { Mplayer15 } from "@react95/icons"
-import { Icon } from "@iconify/react"
 
 import './App.css'
 import '@react95/core/themes/win95.css';
@@ -11,9 +10,6 @@ import { reducer, initialization } from "./reducer.js"
 
 import Buttons from "./components/Buttons.js"
 import Process from "./components/Process.js"
-interface Buttons {
-    isPause: boolean;
-}
 
 interface trackName {
     trackName: string;
@@ -56,7 +52,7 @@ function Player() :JSX.Element{
     return (
             <Frame className="main" bgColor={ '$material' } boxShadow= {'$out'}>
                 <PlayerFrame trackName={ (playerState.trackInfor===null)? "罟罟冠啊噶" : playerState.trackInfor.name  }/>
-                <Process value={ playerState.currentTime/playerState.totalTime*100 } dispatch={ dispatch } playerState={ { currentTime: playerState.currentTime, totalTime: playerState.totalTime} }></Process>
+                <Process dispatch={ dispatch } playerState={ { currentTime: playerState.currentTime, totalTime: playerState.totalTime} }></Process>
                 <Buttons isPause={ playerState.isPlaying }></Buttons>
                 <div className="tiem"></div>
             </Frame>
