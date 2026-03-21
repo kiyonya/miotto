@@ -30,6 +30,7 @@ onUnmounted(() => {
     position: relative;
     width: 12rem;
     height: 12rem;
+    aspect-ratio: 1/1;
 
     img{
         animation: fadein .3s ease-in-out;
