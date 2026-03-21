@@ -40,12 +40,18 @@ const router = createRouter({
             path:"/search/result/:keyword",
             component:()=>import('@renderer/views/search/SearchResult.vue'),
             props:true
+        },
+        {
+            name:'Album',
+            path:'/album/:id',
+            component:()=>import('@renderer/views/album/Album.vue'),
+            props:true
         }
     ]
 })
 
 router.beforeEach((to,from,next)=>{
-    window.emitter.post('appRouterUpdate',{from:from.fullPath,to:to.fullPath})
+    window.emitter.post('app::routerUpdate',{from:from.fullPath,to:to.fullPath})
     next()
 })
 
