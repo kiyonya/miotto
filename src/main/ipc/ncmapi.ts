@@ -208,53 +208,60 @@ export class NCMAPIService {
     }
 
     public static async songLyric(id: number): Promise<AppTypes.ILyric> {
-        if (this.lyricCache.has(id)) {
-            return this.lyricCache.get(id) as AppTypes.ILyric;
-        }
+        try {
+            if (this.lyricCache.has(id)) {
+                return this.lyricCache.get(id) as AppTypes.ILyric;
+            }
 
-        const req = await ncmapi.lyric_new({
-            id: id,
-            cookie: this.apiStore.get('cookies'),
-            proxy: this.apiStore.get('proxy')
-        });
-        const lyricMap = req.body as any;
-        const isPure: boolean = lyricMap.pureMusic;
+            const req = await ncmapi.lyric_new({
+                id: id,
+                cookie: this.apiStore.get('cookies'),
+                proxy: this.apiStore.get('proxy')
+            });
+            const lyricMap = req.body as any;
+            const isPure: boolean = lyricMap.pureMusic;
 
-        if (isPure) {
-            const lyric = {
-                pure: true,
-                lyrics: []
-            };
+            if (isPure) {
+                const lyric = {
+                    pure: true,
+                    lyrics: []
+                };
+                this.lyricCache.set(id, lyric);
+                return lyric;
+            }
+
+            const isTimelineParseMode = Boolean(lyricMap?.yrc?.lyric);
+            let lyric;
+            if (isTimelineParseMode) {
+                const lyrics = combinor(
+                    parse(lyricMap?.yrc?.lyric),
+                    parse(lyricMap?.ytlrc?.lyric),
+                    parse(lyricMap?.yromalrc?.lyric)
+                );
+                lyric = {
+                    pure: false,
+                    lyrics: lyrics
+                };
+            } else {
+                const lyrics = combinor(
+                    parse(lyricMap?.lrc?.lyric),
+                    parse(lyricMap?.tlyric.lyric),
+                    parse(lyricMap?.romalrc?.lyric)
+                );
+                lyric = {
+                    pure: false,
+                    lyrics: lyrics
+                };
+            }
+
             this.lyricCache.set(id, lyric);
             return lyric;
+        } catch (error) {
+            return {
+                pure: true,
+                lyrics: []
+            }
         }
-
-        const isTimelineParseMode = Boolean(lyricMap?.yrc?.lyric);
-        let lyric;
-        if (isTimelineParseMode) {
-            const lyrics = combinor(
-                parse(lyricMap?.yrc?.lyric),
-                parse(lyricMap?.ytlrc?.lyric),
-                parse(lyricMap?.yromalrc?.lyric)
-            );
-            lyric = {
-                pure: false,
-                lyrics: lyrics
-            };
-        } else {
-            const lyrics = combinor(
-                parse(lyricMap?.lrc?.lyric),
-                parse(lyricMap?.tlyric.lyric),
-                parse(lyricMap?.romalrc?.lyric)
-            );
-            lyric = {
-                pure: false,
-                lyrics: lyrics
-            };
-        }
-
-        this.lyricCache.set(id, lyric);
-        return lyric;
     }
 
     public static async artistDetail(artistId: number): Promise<AppTypes.IArtist> {
@@ -576,35 +583,64 @@ export class NCMAPIService {
         return kws
     }
 
-    public static async searchResultComplex(keyword:string):Promise<AppTypes.ISearchComplex>{
+    public static async searchResultComplex(keyword: string): Promise<AppTypes.ISearchComplex> {
         const req = await ncmapi.search({
-            keywords:keyword,
-            limit:30,
-            type:1018,
+            keywords: keyword,
+            limit: 30,
+            type: 1018,
             cookie: this.apiStore.get('cookies'),
             proxy: this.apiStore.get('proxy')
         })
         const result = req.body.result as any
-        const processed:AppTypes.ISearchComplex = {
-            songs:(result?.song?.songs || []).map(this.transNcmFullSong2ISong),
-            playlists:(result?.playList?.playLists || []).map(this.transNcmPlaylist2IPlaylistBrief),
-            albums:(result?.album?.albums || []).map(this.transNcmAlbum2IAlbumBrief),
-            artists:(result?.artist?.artists || []).map(this.transNcmArtist2IArtistBrief)
+        const processed: AppTypes.ISearchComplex = {
+            songs: (result?.song?.songs || []).map(this.transNcmFullSong2ISong),
+            playlists: (result?.playList?.playLists || []).map(this.transNcmPlaylist2IPlaylistBrief),
+            albums: (result?.album?.albums || []).map(this.transNcmAlbum2IAlbumBrief),
+            artists: (result?.artist?.artists || []).map(this.transNcmArtist2IArtistBrief)
         }
         return processed
     }
 
-    public static async audioFingerprintMatch(afp:string,duration:number = 3){
+    public static async audioFingerprintMatch(afp: string, duration: number = 3) {
         const req = await ncmapi.audio_match({
-            duration:duration,
-            audioFP:afp
+            duration: duration,
+            audioFP: afp
         })
         const data = req.body.data as any
         const result = data.result as any[]
-        if(!result){return []}
-        const songs = result.map(i=>i.song)
-        console.log(songs)
+        if (!result) { return [] }
+        const songs = result.map(i => i.song)
         return songs.map(this.transNcmFullSong2ISong)
+    }
+
+    public static async album(albumId: number): Promise<{ songs: AppTypes.ISong[], album: AppTypes.IAlbum }> {
+        const req = await ncmapi.album({
+            id: albumId,
+            cookie: this.apiStore.get('cookies'),
+            proxy: this.apiStore.get('proxy')
+        })
+        const data = req.body as any
+        const songs = (data.songs || []) as any[]
+        const isongs = songs.map(this.transNcmFullSong2ISong)
+        const album: AppTypes.IAlbum = {
+            name: data?.album.name,
+            description: data?.album?.description,
+            publishTime: data?.album?.publishTime,
+            company: data?.album?.company,
+            id: data?.album?.id,
+            cover: data?.album?.picUrl,
+            artist: this.transNcmArtist2IArtistBrief(data?.album?.artist),
+            artists: (data?.album?.artists || []).map(this.transNcmArtist2IArtistBrief)
+        }
+        const albumCover = album.cover
+        for (const song of isongs) {
+            song.cover = albumCover,
+                song.album.cover = albumCover
+        }
+        return {
+            album: album,
+            songs: isongs
+        }
     }
 
 
@@ -642,40 +678,40 @@ export class NCMAPIService {
         return isong;
     }
 
-    private static transNcmPlaylist2IPlaylistBrief(playlist:any):AppTypes.IPlaylistBrief {
-        const iplaylist:AppTypes.IPlaylistBrief = {
-            cover:playlist?.picUrl || playlist.coverImgUrl || '',
-            name:playlist.name,
-            id:playlist.id,
-            type:'ncm',
-            trackCount:playlist.trackCount
+    private static transNcmPlaylist2IPlaylistBrief(playlist: any): AppTypes.IPlaylistBrief {
+        const iplaylist: AppTypes.IPlaylistBrief = {
+            cover: playlist?.picUrl || playlist.coverImgUrl || '',
+            name: playlist.name,
+            id: playlist.id,
+            type: 'ncm',
+            trackCount: playlist.trackCount
         }
         return iplaylist
     }
 
-    private static transNcmAlbum2IAlbumBrief(album:any):AppTypes.IAlbumBrief{
-        const ialbum :AppTypes.IAlbumBrief = {
-            name:album.name,
-            id:album.id,
-            tns:album.transNames || album.tns || [],
-            cover:album.coverImgUrl || album.picUrl || album.blurPicUrl || ''
+    private static transNcmAlbum2IAlbumBrief(album: any): AppTypes.IAlbumBrief {
+        const ialbum: AppTypes.IAlbumBrief = {
+            name: album.name,
+            id: album.id,
+            tns: album.transNames || album.tns || [],
+            cover: album.coverImgUrl || album.picUrl || album.blurPicUrl || ''
         }
         return ialbum
     }
 
-    private static transNcmArtist2IArtistBrief(artist:any):AppTypes.IArtistBrief{
-        const iar:AppTypes.IArtistBrief = {
-            name:artist.name,
-            id:artist.id,
-            tns:artist.transNames || artist.tns || [],
-            alias:artist.alias || [],
-            platform:'ncm',
-            avatar:artist.picUrl || artist.img1v1Url || undefined
+    private static transNcmArtist2IArtistBrief(artist: any): AppTypes.IArtistBrief {
+        const iar: AppTypes.IArtistBrief = {
+            name: artist.name,
+            id: artist.id,
+            tns: artist.transNames || artist.tns || [],
+            alias: artist.alias || [],
+            platform: 'ncm',
+            avatar: artist.picUrl || artist.img1v1Url || undefined
         }
         return iar
     }
 
-    
+
 
 
     public static clearAllCaches() {
@@ -777,11 +813,15 @@ export function registerNCMApiIPC() {
         return await NCMAPIService.searchMatchSuggestKeywords(keyword)
     })
 
-    ipcMain.handle('ncmapi:searchResultComplex',async (_,keyword:string)=>{
+    ipcMain.handle('ncmapi:searchResultComplex', async (_, keyword: string) => {
         return await NCMAPIService.searchResultComplex(keyword)
     })
 
-    ipcMain.handle('ncmapi:audioFingerprintMatch',async (_,afp:string,duration:number)=>{
-        return await NCMAPIService.audioFingerprintMatch(afp,duration)
+    ipcMain.handle('ncmapi:audioFingerprintMatch', async (_, afp: string, duration: number) => {
+        return await NCMAPIService.audioFingerprintMatch(afp, duration)
+    })
+
+    ipcMain.handle('ncmapi:album', async (_, albumId: number) => {
+        return await NCMAPIService.album(albumId)
     })
 }
