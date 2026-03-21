@@ -206,7 +206,9 @@ export class BetterEventEmitter<Events extends Record<string | symbol, any> = Re
         return this
     }
 
-    public get<Key extends keyof Events>(key: Key) { return this.eventStore.get(key) }
+    public get<Key extends keyof Events>(key: Key):Events[Key] | undefined{ 
+        return this.eventStore.get(key) 
+    }
 
     public delete<Key extends keyof Events>(key: Key): this {
         this.eventStore.delete(key)
