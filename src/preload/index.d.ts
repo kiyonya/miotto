@@ -7,7 +7,7 @@ import { AppEvents } from 'src/types/event'
 declare global {
   interface Window {
     electron: ElectronAPI
-    ncmapi: NCMAPI,
+    ncmapi:AppAPI.NCM,
     biliapi:BiliAPI,
     localapi:LocalAPI,
     appapi:AppAPI.APP,
