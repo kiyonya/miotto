@@ -177,15 +177,15 @@ const showLyricOffsetTip = ref<boolean>(false)
 let showLyricOffsetTipTimeout:NodeJS.Timeout | null  =null
 
 
-function startRenderLyric() {
+function startRenderLyric(first:boolean = false) {
     if (!window.$player?.waudio.paused) {
         const now = Date.now()
-        if(now - lastLyricComputeTime > lyricComputeInterval){
+        if((now - lastLyricComputeTime > lyricComputeInterval) || first){
             lastLyricComputeTime = now
             updateLyricState()
         }
     }
-    requestAnimationId = requestAnimationFrame(startRenderLyric)
+    requestAnimationId = requestAnimationFrame(()=>startRenderLyric())
 }
 
 function updateLyricState() {
@@ -286,7 +286,7 @@ onMounted(() => {
     }
     window.addEventListener('resize', onResize)
     updateLyricState()
-    startRenderLyric()
+    startRenderLyric(true)
 })
 
 onUnmounted(() => {
