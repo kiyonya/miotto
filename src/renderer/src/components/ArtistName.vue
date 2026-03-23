@@ -45,5 +45,8 @@ const artists = computed<ArtistTag[]>(()=>{
     font-size: 0.85rem;
     text-decoration: none;
 }
+.ar:hover{
+    text-decoration: underline;
+}
 
 </style>
