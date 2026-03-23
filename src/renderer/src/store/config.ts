@@ -20,6 +20,7 @@ interface ConfigState {
     autoplayWhenAppStart:boolean,
 
     musicBackgroundMode:'dynamic' | 'cover',
+    enableMusicplayerDynamicCover:boolean,
     letsFishUp:boolean,
 }
 
@@ -39,7 +40,7 @@ const useConfigStore = defineStore('config', {
         audioFadeDuration:500,
         autoplayWhenAppStart:false,
         musicBackgroundMode:'dynamic',
-
+        enableMusicplayerDynamicCover:true,
 
         letsFishUp:false
     }),

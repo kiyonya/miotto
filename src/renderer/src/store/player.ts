@@ -23,7 +23,8 @@ interface PlayerStoreState {
     onplay: {
         track: AppTypes.ISongTrack,
         song: AppTypes.ISong,
-        trackId: AppTypes.ITrackId
+        trackId: AppTypes.ITrackId,
+        dynamicCover:string | null,
     } | null,
     player: {
         playMode: 'shuffle' | 'list' | 'loop' | 'listloop',
@@ -91,11 +92,12 @@ const usePlayerStore = defineStore('player', {
 
             window.emitter.setPost('playing::lyricUpdate', lyric)
         },
-        setOnPlayTrack(track: AppTypes.ISongTrack, song: AppTypes.ISong, trackId: AppTypes.ITrackId) {
+        setOnPlayTrack(track: AppTypes.ISongTrack, song: AppTypes.ISong, trackId: AppTypes.ITrackId,dynamicCover:string | null = null) {
             this.onplay = {
                 track: track,
                 song: song,
-                trackId: trackId
+                trackId: trackId,
+                dynamicCover:dynamicCover
             }
 
             window.emitter.setPost('playing::trackUpdate', track)

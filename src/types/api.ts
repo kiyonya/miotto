@@ -80,7 +80,8 @@ export namespace AppAPI {
         searchMatchSuggestKeywords: (keyword: string) => Promise<AppTypes.SearchMatchKeyword[]>,
         searchResultComplex: (keyword: string) => Promise<AppTypes.ISearchComplex>,
         audioFingerprintMatch: (afp: string, duration: number) => Promise<AppTypes.INCMSong[]>,
-        album:(id:number)=>Promise<{songs:AppTypes.ISong[],album:AppTypes.IAlbum}>
+        album:(id:number)=>Promise<{songs:AppTypes.ISong[],album:AppTypes.IAlbum}>,
+        songDynamicCover:(id:number)=>Promise<string | null>
     }
 
     export interface Bili {

@@ -643,6 +643,26 @@ export class NCMAPIService {
         }
     }
 
+    public static async songDynamicCover(ncmid:number):Promise<string | null>{
+        //NeteaseCloudMusicApi 的类型标注并不全面 我已经declare的扩展
+        //所以在这里
+        //fuck typescript
+        //@ts-ignore(declared)
+        const req = await ncmapi.song_dynamic_cover({
+            id: ncmid,
+            cookie: this.apiStore.get('cookies'),
+            proxy: this.apiStore.get('proxy')
+        })
+        const body = req.body as any
+        const data = body.data as Record<string,string>
+        if(data.videoPlayUrl){
+            return data.videoPlayUrl as string
+        }
+        else{
+            return null
+        }
+    }
+
 
     private static transNcmFullSong2ISong(song: any): AppTypes.INCMSong {
         const artistsProp = song.ar || song.artists
@@ -823,5 +843,9 @@ export function registerNCMApiIPC() {
 
     ipcMain.handle('ncmapi:album', async (_, albumId: number) => {
         return await NCMAPIService.album(albumId)
+    })
+
+    ipcMain.handle('ncmapi:songDynamicCover',async (_,id:number)=>{
+        return await NCMAPIService.songDynamicCover(id)
     })
 }

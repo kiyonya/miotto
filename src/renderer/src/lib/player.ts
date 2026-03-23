@@ -227,9 +227,11 @@ export class Player {
         await this.waudio.loadSrc(track.url, autoPlay)
         const detail = await window.ncmapi.songDetail(ncmid, true)
         const lyric = await this.getLyricFromNCM(ncmid)
+        const dynamicCover = await window.ncmapi.songDynamicCover(ncmid)
 
         this.updateSystemMediaSession(detail[0])
-        this.playerStore.setOnPlayTrack(track, detail[0], trackId)
+
+        this.playerStore.setOnPlayTrack(track, detail[0], trackId,dynamicCover)
         this.playerStore.setLyric(lyric)
     }
 
@@ -276,8 +278,12 @@ export class Player {
                     lyrics: []
                 })
             }
+            let dynamicCover:string | null = null
+            if(detail.ncmMatchId){
+                dynamicCover = await window.ncmapi.songDynamicCover(detail.ncmMatchId)
+            }
             this.updateSystemMediaSession(detail)
-            this.playerStore.setOnPlayTrack(track, detail, localId)
+            this.playerStore.setOnPlayTrack(track, detail, localId,dynamicCover)
         }
     }
 

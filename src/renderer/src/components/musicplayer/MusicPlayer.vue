@@ -1,5 +1,5 @@
 <template>
-    <div class="player">
+    <div class="player" @contextmenu.stop="handlePlayerMenu">
         <div class="drag-area"></div>
 
         <div class="global-set">
@@ -19,15 +19,21 @@
         <div class="song" :class="{ 'song-center': !showRight }">
             <div class="song-info">
                 <div class="basic">
-                    <div class="name single-line" @click="onSongNameClick">{{ onplay?.song.name }}</div>
-                    <ArtistName :artists="onplay?.song.artists" v-if="onplay?.song.artists" class="artist"  @routerJump="onRouterJump"></ArtistName>
+                    <div class="name single-line" @click="viewSongAlbum">{{ onplay?.song.name }}</div>
+                    <ArtistName :artists="onplay?.song.artists" v-if="onplay?.song.artists" class="artist"
+                        @routerJump="onRouterJump"></ArtistName>
                 </div>
             </div>
 
-            <DropShadowImg :src="$imgrsz(onplay?.song.cover, 500)" class="cover" v-if="onplay?.song.cover"
+            <video v-if="onplay?.dynamicCover && configStore.enableMusicplayerDynamicCover" :src="onplay.dynamicCover"
+                :class="{ scale: !audioState.playing }" loop muted autoplay class="video">
+            </video>
+            <DropShadowImg :src="$imgrsz(onplay?.song.cover, 500)" class="cover"
+                v-if="!(onplay?.dynamicCover && configStore.enableMusicplayerDynamicCover) && onplay?.song.cover"
                 :key="onplay?.song.cover" :class="{ scale: !audioState.playing }"
-                @contextmenu="handleCoverMenu($event)">
+                @contextmenu.stop="handleCoverMenu($event)">
             </DropShadowImg>
+
 
             <div class="slider">
                 <input type="range" name="" id="" min="0" max="1" step="0.001" v-model="audioProgress" class="sld"
@@ -97,7 +103,7 @@
 
         <span class="tip"
             style="position: absolute;left: 1rem;bottom: 1rem;color: white;opacity: 0.5;z-index: 9999;font-size: 0.9rem;">
-            Miotto MusicPlayer Beta v0.7.1
+            Miotto MusicPlayer Beta v0.7.3
         </span>
 
     </div>
@@ -273,13 +279,50 @@ function handleCoverMenu(event: MouseEvent) {
     })
 }
 
-function handleBackgroundMenu(event:MouseEvent){
+function handleBackgroundMenu(event: MouseEvent) {
     FunctionalWindows.showContextMenu({
-        x:event.x,
-        y:event.y,
-        items:[
-            {label:'使用动态背景',onClick:()=>configStore.config('musicBackgroundMode','dynamic'),icon:'fluent:fluid-20-filled'},
-            {label:'使用封面背景',onClick:()=>configStore.config('musicBackgroundMode','cover'),icon:"fluent:circle-image-20-regular"},
+        x: event.x,
+        y: event.y,
+        items: [
+            { label: '使用动态背景', onClick: () => configStore.config('musicBackgroundMode', 'dynamic'), icon: 'fluent:fluid-20-filled' },
+            { label: '使用封面背景', onClick: () => configStore.config('musicBackgroundMode', 'cover'), icon: "fluent:circle-image-20-regular" },
+        ]
+    })
+}
+
+function handlePlayerMenu(event: MouseEvent) {
+    FunctionalWindows.showContextMenu({
+        x: event.x,
+        y: event.y,
+        items: [
+            {
+                label: audioState.value.playing ? '暂停' : '播放',
+                onClick: () => player.control.togglePlayPause(),
+                icon: audioState.value.playing ? 'fluent:pause-20-filled' : 'fluent:play-20-filled'
+            },
+            {
+                label: '上一首',
+                onClick: () => player.previous(),
+                icon: 'tabler:player-track-prev-filled'
+            },
+            {
+                label: '下一首',
+                onClick: () => player.next(),
+                icon: 'tabler:player-track-next-filled'
+            },
+            {
+                split: true
+            },
+            {
+                label: '查看歌曲专辑',
+                onClick: () => viewSongAlbum(),
+                icon: 'fluent:album-20-filled'
+            },
+            {
+                label: '歌曲详情',
+                icon: 'fluent:book-information-24-filled',
+                disabled: true
+            }
         ]
     })
 }
@@ -288,17 +331,17 @@ function handleLyricSeek(timems: number) {
     player.control.seek(timems / 1000)
 }
 
-function onRouterJump(){
+function onRouterJump() {
     appStore.doCloseMusicPlayer()
 }
 
-function onSongNameClick(){
+function viewSongAlbum() {
     const albumId = onplay.value?.song.album.id
-    if(albumId){
+    if (albumId) {
         router.push({
-            name:"Album",
-            params:{
-                id:albumId
+            name: "Album",
+            params: {
+                id: albumId
             }
         })
         onRouterJump()
@@ -463,6 +506,7 @@ function onSongNameClick(){
         margin-bottom: 0.6rem;
         position: relative;
         transition: .5s;
+        border-radius: var(--br-2);
 
         .layer-1,
         .layer-2 {
@@ -473,6 +517,16 @@ function onSongNameClick(){
             height: 100%;
             border-radius: 0.5rem;
         }
+    }
+
+    .video{
+        width: 23rem;
+        height: 23rem;
+        box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+        margin-bottom: 0.6rem;
+        position: relative;
+        transition: .5s;
+        border-radius: var(--br-2);
     }
 
     .control {
