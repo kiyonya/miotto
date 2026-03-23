@@ -6,7 +6,7 @@
             <button @click="handleBackgroundMenu($event)">
                 <Icon icon="fluent:color-background-24-regular" />
             </button>
-            <button @click="appStore.toggleShowMusicPlayer()">
+            <button @click="appStore.doCloseMusicPlayer">
                 <Icon icon="fluent:chevron-down-24-regular" />
             </button>
         </div>
@@ -19,8 +19,8 @@
         <div class="song" :class="{ 'song-center': !showRight }">
             <div class="song-info">
                 <div class="basic">
-                    <div class="name single-line">{{ onplay?.song.name }}</div>
-                    <div class="artist">{{ onplay?.song.artists[0].name }}</div>
+                    <div class="name single-line" @click="onSongNameClick">{{ onplay?.song.name }}</div>
+                    <ArtistName :artists="onplay?.song.artists" v-if="onplay?.song.artists" class="artist"  @routerJump="onRouterJump"></ArtistName>
                 </div>
             </div>
 
@@ -118,6 +118,9 @@ import FunctionalWindows from '../windows';
 import DynamicBackgroud from './DynamicBackgroud.vue';
 import useConfigStore from '@renderer/store/config';
 import CoverBackground from './CoverBackground.vue';
+import ArtistName from '../ArtistName.vue';
+import { useRouter } from 'vue-router';
+const router = useRouter()
 const vueInstance = getCurrentInstance()
 const player = window.$player
 const configStore = useConfigStore()
@@ -284,6 +287,23 @@ function handleBackgroundMenu(event:MouseEvent){
 function handleLyricSeek(timems: number) {
     player.control.seek(timems / 1000)
 }
+
+function onRouterJump(){
+    appStore.doCloseMusicPlayer()
+}
+
+function onSongNameClick(){
+    const albumId = onplay.value?.song.album.id
+    if(albumId){
+        router.push({
+            name:"Album",
+            params:{
+                id:albumId
+            }
+        })
+        onRouterJump()
+    }
+}
 </script>
 <style scoped>
 .player {
@@ -425,6 +445,7 @@ function handleLyricSeek(timems: number) {
                 font-size: 1.4rem;
                 font-weight: 500;
                 max-width: 22rem;
+                cursor: pointer;
             }
 
             .artist {

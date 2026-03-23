@@ -4,7 +4,7 @@
             <DropShadowImg :src="albumInfo?.cover" v-if="albumInfo?.cover" class="cover"
                 style="width: 100%;height: auto;"></DropShadowImg>
             <div class="album-info">
-                <div class="name">{{ albumInfo?.name }}</div>
+                <div class="name single-line">{{ albumInfo?.name }}</div>
                 <ArtistName :artists="albumInfo?.artists" v-if="albumInfo"></ArtistName>
                 <div class="info">
                     <span>©{{ albumInfo?.company }}</span>
@@ -117,7 +117,7 @@ function handlePlay(song:AppTypes.ISong){
             }
 
             .name {
-                font-size: 1.2rem;
+                font-size: 1.35rem;
                 font-weight: 500;
             }
 

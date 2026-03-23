@@ -1,6 +1,6 @@
 <template>
     <div class="artist-name">
-        <RouterLink class="ar single-line" :to="{name:'ArtistNcm',params:{id:artist.id}}" v-for="artist in artists" @click.stop >{{ artist.name }}</RouterLink>
+        <RouterLink class="ar single-line" :to="{name:'ArtistNcm',params:{id:artist.id}}" v-for="artist in artists" @click.stop="handleRouterLinkClick" >{{ artist.name }}</RouterLink>
     </div>
 </template>
 
@@ -13,6 +13,10 @@ interface ArtistTag {
     name:string,
     id:number
 }
+
+const emits = defineEmits<{
+    routerJump:[]
+}>()
 
 const props = defineProps<{
     artists:AppTypes.IArtistBrief | AppTypes.IArtist | AppTypes.IArtistBrief[] | AppTypes.IArtist[]
@@ -31,6 +35,10 @@ const artists = computed<ArtistTag[]>(()=>{
     }
     return rs
 })
+
+function handleRouterLinkClick(){
+    emits('routerJump')
+}
 
 </script>
 <style scoped>
