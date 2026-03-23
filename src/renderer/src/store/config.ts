@@ -21,6 +21,7 @@ interface ConfigState {
 
     musicBackgroundMode:'dynamic' | 'cover',
     enableMusicplayerDynamicCover:boolean,
+    enableLyricScrollDebounce:boolean,
     letsFishUp:boolean,
 }
 
@@ -41,7 +42,7 @@ const useConfigStore = defineStore('config', {
         autoplayWhenAppStart:false,
         musicBackgroundMode:'dynamic',
         enableMusicplayerDynamicCover:true,
-
+        enableLyricScrollDebounce:true,
         letsFishUp:false
     }),
     actions:{

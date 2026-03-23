@@ -1,91 +1,102 @@
 <template>
     <div class="lyric-component">
         <div class="lyric-container" ref="lyricContainer">
-                <div class="lyric-list">
-            <div class="line" v-for="(line, index) in renderLyrics" :class="{ highlight: line.highlight }"
-                :data-index="index" @click="lyricSeek(line.mlyric.lineStartTime)">
+            <div class="lyric-list">
+                <div class="line" v-for="(line, index) in renderLyrics" :class="{ highlight: line.highlight }"
+                    :data-index="index" @click="lyricSeek(line.mlyric.lineStartTime)">
 
-                <template v-if="line.mlyric.type === 'lyric'">
-                    <div class="lyric">
-                        <div class="main-lyric">
-                            <template v-if="line.mlyric.mainLyric.isTimeline">
-                                <template v-for="(char, index) in line.mlyric.mainLyric.words">
-                                    <span class="char char-complete" v-if="index < line.highlightWord">{{ char.char
-                                    }}</span>
-                                    <span class="char char-running" v-if="index === line.highlightWord"
-                                        :style="`--dt:${char.duration / 1000}s`" :data-text="char.char">
-                                        {{ char.char }}
-                                    </span>
-                                    <span class="char char-wait" v-if="index > line.highlightWord">{{ char.char
-                                    }}</span>
+                    <template v-if="line.mlyric.type === 'lyric'">
+                        <div class="lyric">
+                            <div class="main-lyric">
+                                <template v-if="line.mlyric.mainLyric.isTimeline">
+                                    <template v-for="(char, index) in line.mlyric.mainLyric.words">
+                                        <span class="char char-complete" v-if="index < line.highlightWord">{{ char.char
+                                        }}</span>
+                                        <span class="char char-running" v-if="index === line.highlightWord"
+                                            :style="`--dt:${char.duration / 1000}s`" :data-text="char.char">
+                                            {{ char.char }}
+                                        </span>
+                                        <span class="char char-wait" v-if="index > line.highlightWord">{{ char.char
+                                        }}</span>
+                                    </template>
+
                                 </template>
 
-                            </template>
-
-                            <template v-else>
-                                <span class="string">{{ line.mlyric.mainLyric.string }}</span>
-                            </template>
-
-                        </div>
-                        <div class="translate-lyric" v-if="lyricDisplayMode === 'tns'">{{ line.mlyric.translateLyric?.string }}</div>
-                        <div class="roma-lyric" v-if="lyricDisplayMode === 'roma'">{{ line.mlyric.romaLyric?.string }}</div>
-                    </div>
-                </template>
-
-                <template v-if="line.mlyric.type === 'sublyric'">
-
-                    <div class="sublyric">
-                        <div class="main-lyric">
-                            <template v-if="line.mlyric.mainLyric.isTimeline">
-                                <template v-for="(char, index) in line.mlyric.mainLyric.words">
-                                    <span class="char char-complete" v-if="index < line.highlightWord">{{ char.char
-                                    }}</span>
-                                    <span class="char char-running" v-if="index === line.highlightWord"
-                                        :style="`--dt:${char.duration / 1000}s`" :data-text="char.char">
-                                        {{ char.char }}
-                                    </span>
-                                    <span class="char char-wait" v-if="index > line.highlightWord">{{ char.char
-                                    }}</span>
+                                <template v-else>
+                                    <span class="string">{{ line.mlyric.mainLyric.string }}</span>
                                 </template>
-                                
-                            </template>
 
-                            <template v-else>
-                                <span class="string">{{ line.mlyric.mainLyric.string }}</span>
-                            </template>
+                            </div>
+                            <div class="translate-lyric" v-if="lyricDisplayMode === 'tns'">{{
+                                line.mlyric.translateLyric?.string }}</div>
+                            <div class="roma-lyric" v-if="lyricDisplayMode === 'roma'">{{ line.mlyric.romaLyric?.string
+                            }}</div>
+                        </div>
+                    </template>
 
-                        </div>
-                        <div class="translate-lyric">{{ line.mlyric.translateLyric?.string }}</div>
-                        <div class="roma-lyric"></div>
-                    </div>
+                    <template v-if="line.mlyric.type === 'sublyric'">
 
-                </template>
+                        <div class="sublyric">
+                            <div class="main-lyric">
+                                <template v-if="line.mlyric.mainLyric.isTimeline">
+                                    <template v-for="(char, index) in line.mlyric.mainLyric.words">
+                                        <span class="char char-complete" v-if="index < line.highlightWord">{{ char.char
+                                        }}</span>
+                                        <span class="char char-running" v-if="index === line.highlightWord"
+                                            :style="`--dt:${char.duration / 1000}s`" :data-text="char.char">
+                                            {{ char.char }}
+                                        </span>
+                                        <span class="char char-wait" v-if="index > line.highlightWord">{{ char.char
+                                        }}</span>
+                                    </template>
 
-                <template v-if="line.mlyric.type === 'gap'">
-                    <div class="gap">
-                        <div class="ball" :style="`--progress:${Math.max(Math.min(line.gapPassProgress * 3, 1), 0.1)}`">
+                                </template>
+
+                                <template v-else>
+                                    <span class="string">{{ line.mlyric.mainLyric.string }}</span>
+                                </template>
+
+                            </div>
+                            <div class="translate-lyric">{{ line.mlyric.translateLyric?.string }}</div>
+                            <div class="roma-lyric"></div>
                         </div>
-                        <div class="ball"
-                            :style="`--progress:${Math.max(Math.max(0, Math.min((line.gapPassProgress - 1 / 3) * 3, 1)), 0.1)}`">
+
+                    </template>
+
+                    <template v-if="line.mlyric.type === 'gap'">
+                        <div class="gap">
+                            <div class="ball"
+                                :style="`--progress:${Math.max(Math.min(line.gapPassProgress * 3, 1), 0.1)}`">
+                            </div>
+                            <div class="ball"
+                                :style="`--progress:${Math.max(Math.max(0, Math.min((line.gapPassProgress - 1 / 3) * 3, 1)), 0.1)}`">
+                            </div>
+                            <div class="ball"
+                                :style="`--progress:${Math.max(Math.max(0, Math.min((line.gapPassProgress - 2 / 3) * 3, 1)), 0.1)}`">
+                            </div>
                         </div>
-                        <div class="ball"
-                            :style="`--progress:${Math.max(Math.max(0, Math.min((line.gapPassProgress - 2 / 3) * 3, 1)), 0.1)}`">
-                        </div>
-                    </div>
-                </template>
+                    </template>
+                </div>
+
             </div>
+        </div>
 
-        </div>
-        </div>
-        
         <div class="lyric-control">
 
-           <TabSwitch :items="lyricDisplayModeItems" v-model="lyricDisplayMode" v-if="showLyricTypeSwitch" class="switch"></TabSwitch>
-           <div class="d" v-if="showLyricTypeSwitch"></div>
-           <button class="btn" @click="lyricOffsetDecrese"><Icon icon="fluent:caret-left-16-filled" /></button>
-           <button class="btn" @click="lyricOffsetIncrese"><Icon icon="fluent:caret-right-16-filled" /></button>
-           <span class="lyric-offset" v-if="showLyricOffsetTip">{{ (lyricOffset / 1000).toFixed(1) }}s</span>
-           <button class="btn" style="margin-left: auto;" @click="saveLyric"><Icon icon="fluent:save-16-regular" /></button>
+            <TabSwitch :items="lyricDisplayModeItems" v-model="lyricDisplayMode" v-if="showLyricTypeSwitch"
+                class="switch">
+            </TabSwitch>
+            <div class="d" v-if="showLyricTypeSwitch"></div>
+            <button class="btn" @click="lyricOffsetDecrese">
+                <Icon icon="fluent:caret-left-16-filled" />
+            </button>
+            <button class="btn" @click="lyricOffsetIncrese">
+                <Icon icon="fluent:caret-right-16-filled" />
+            </button>
+            <span class="lyric-offset" v-if="showLyricOffsetTip">{{ (lyricOffset / 1000).toFixed(1) }}s</span>
+            <button class="btn" style="margin-left: auto;" @click="saveLyric">
+                <Icon icon="fluent:save-16-regular" />
+            </button>
         </div>
     </div>
 
@@ -97,14 +108,16 @@ import { computed, nextTick, onMounted, onUnmounted, ref, WatchHandle } from 'vu
 import { computeHighlightV2 } from './lyric';
 import TabSwitch from '../components/TabSwitch.vue';
 import { Icon } from '@iconify/vue';
+import useConfigStore from '@renderer/store/config';
 
+const configStore = useConfigStore()
 const props = defineProps<{
     lyric: AppTypes.ILyric
 }>()
 
 const emits = defineEmits<{
-    saveLyric:[],
-    lyricSeek:[timems:number]
+    saveLyric: [],
+    lyricSeek: [timems: number]
 }>()
 
 interface RenderLyric {
@@ -139,8 +152,10 @@ const renderLyrics = computed<RenderLyric[]>(() => {
     return renderLyrics
 })
 
-const showLyricTypeSwitch = computed<boolean>(()=>{
-    if(!props.lyric.pure && props?.lyric.lyrics.some(lyric=>lyric.type === 'lyric' && lyric.mainLyric && lyric.romaLyric && lyric.translateLyric)){
+const enableScrollDebounce = computed(() => configStore.enableLyricScrollDebounce)
+
+const showLyricTypeSwitch = computed<boolean>(() => {
+    if (!props.lyric.pure && props?.lyric.lyrics.some(lyric => lyric.type === 'lyric' && lyric.mainLyric && lyric.romaLyric && lyric.translateLyric)) {
         return true
     }
     return false
@@ -157,35 +172,44 @@ let lyricWatcher: WatchHandle | null = null
 let pauseScroll: boolean = false
 let lyricScrollRestoreTimeout: NodeJS.Timeout | null = null
 let lastIndex: number = -Infinity
-let lyricComputeInterval:number =50
-let lastLyricComputeTime:number = 0
+let lyricComputeInterval: number = 50
+let lastLyricComputeTime: number = 0
 
 const lyricDisplayMode = ref<'roma' | 'tns'>('tns')
 const lyricDisplayModeItems = [
     {
-        label:'音',
-        value:'roma',
+        label: '音',
+        value: 'roma',
     },
     {
-        label:'译',
-        value:'tns'
+        label: '译',
+        value: 'tns'
     },
 ]
 
 const lyricOffset = ref<number>(0)
 const showLyricOffsetTip = ref<boolean>(false)
-let showLyricOffsetTipTimeout:NodeJS.Timeout | null  =null
+let showLyricOffsetTipTimeout: NodeJS.Timeout | null = null
 
 
-function startRenderLyric(first:boolean = false) {
+function startRenderLyric(first: boolean = false) {
     if (!window.$player?.waudio.paused) {
         const now = Date.now()
-        if((now - lastLyricComputeTime > lyricComputeInterval) || first){
-            lastLyricComputeTime = now
+        if (enableScrollDebounce.value) {
+            if ((now - lastLyricComputeTime > lyricComputeInterval) || first) {
+                lastLyricComputeTime = now
+                updateLyricState()
+            }
+            else {
+                requestAnimationId && cancelAnimationFrame(requestAnimationId)
+            }
+        }
+        else {
             updateLyricState()
         }
+
     }
-    requestAnimationId = requestAnimationFrame(()=>startRenderLyric())
+    requestAnimationId = requestAnimationFrame(() => startRenderLyric())
 }
 
 function updateLyricState() {
@@ -247,8 +271,8 @@ function onContainerScroll() {
     }, 1000);
 }
 
-function lyricSeek(timems:number){
-    emits('lyricSeek',timems)
+function lyricSeek(timems: number) {
+    emits('lyricSeek', timems)
 }
 
 
@@ -258,17 +282,17 @@ function onResize() {
     })
 }
 
-function lyricOffsetIncrese(){
+function lyricOffsetIncrese() {
     lyricOffset.value += 200
     lyricOffsetTip()
 }
-function lyricOffsetDecrese(){
+function lyricOffsetDecrese() {
     lyricOffset.value -= 200
     lyricOffsetTip()
 }
-function lyricOffsetTip(){
-     showLyricOffsetTip.value = true
-    if(showLyricOffsetTipTimeout){
+function lyricOffsetTip() {
+    showLyricOffsetTip.value = true
+    if (showLyricOffsetTipTimeout) {
         clearTimeout(showLyricOffsetTipTimeout)
     }
     showLyricOffsetTipTimeout = setTimeout(() => {
@@ -276,7 +300,7 @@ function lyricOffsetTip(){
     }, 1000);
 }
 
- function saveLyric() {
+function saveLyric() {
     emits('saveLyric')
 }
 
@@ -328,35 +352,35 @@ onUnmounted(() => {
     gap: 1rem;
 }
 
-.lyric-container{
+.lyric-container {
     width: 100%;
     flex: 1;
     overflow: auto;
-    -webkit-mask: linear-gradient(180deg,#000 75%, transparent 100%);
+    -webkit-mask: linear-gradient(180deg, #000 75%, transparent 100%);
 }
 
 .lyric-container::-webkit-scrollbar {
     display: none;
 }
 
-.lyric-control{
+.lyric-control {
     width: 100%;
     height: fit-content;
     display: flex;
     align-items: center;
     gap: 0.5rem;
 
-    .d{
+    .d {
         height: 80%;
         width: 1.5px;
         background: rgba(255, 255, 255, 0.1);
     }
 
-    .switch{
+    .switch {
         height: 1.6rem;
     }
 
-    .btn{
+    .btn {
         height: 1.6rem;
         font-size: 1.3rem;
         box-sizing: border-box;
@@ -365,19 +389,19 @@ onUnmounted(() => {
         justify-content: center;
         border: none;
         background: none;
-        color:rgba(255, 255, 255, 0.65);
+        color: rgba(255, 255, 255, 0.65);
         aspect-ratio: 1/1;
         border-radius: var(--br-1);
         cursor: pointer;
     }
 
-    .btn:hover{
+    .btn:hover {
         background: rgba(255, 255, 255, 0.2);
     }
 
-    .lyric-offset{
-         color:rgba(255, 255, 255, 0.65);
-         font-size: 0.9rem;
+    .lyric-offset {
+        color: rgba(255, 255, 255, 0.65);
+        font-size: 0.9rem;
     }
 }
 
@@ -564,6 +588,4 @@ onUnmounted(() => {
         }
     }
 }
-
-
 </style>
