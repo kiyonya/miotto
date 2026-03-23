@@ -5,7 +5,7 @@
             <div class="name single-line">{{ song.name }}</div>
             <ArtistName :artists="song.artists"></ArtistName>
         </div>
-        <div class="album single-line">{{ song.album.name }}</div>
+        <RouterLink :to="{name:'Album',params:{id:song.album.id}}" v-if="song.album.id" class="album single-line">{{ song.album.name }}</RouterLink>
         <div class="duration">{{ $fmtms(song.duration * 1000) }}</div>
     </div>
 </template>
@@ -85,6 +85,11 @@ const songStyle = computed(() => {
         font-size: 0.85rem;
         color: var(--text-3);
         max-width: 18rem;
+        text-decoration: none;
+    }
+
+    .album:hover{
+        text-decoration: underline;
     }
 
     .typetip {
