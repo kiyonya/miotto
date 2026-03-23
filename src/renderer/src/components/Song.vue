@@ -5,7 +5,7 @@
             <div class="name single-line">{{ song.name }}</div>
             <ArtistName :artists="song.artists"></ArtistName>
         </div>
-        <RouterLink :to="{name:'Album',params:{id:song.album.id}}" v-if="song.album.id" class="album single-line">{{ song.album.name }}</RouterLink>
+        <RouterLink :to="{name:'Album',params:{id:song.album.id}}" v-if="song.album.id" class="album single-line" @click.stop>{{ song.album.name }}</RouterLink>
         <div class="duration">{{ $fmtms(song.duration * 1000) }}</div>
     </div>
 </template>
