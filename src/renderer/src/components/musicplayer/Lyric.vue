@@ -47,7 +47,7 @@
                                     <span class="char char-wait" v-if="index > line.highlightWord">{{ char.char
                                     }}</span>
                                 </template>
-
+                                
                             </template>
 
                             <template v-else>

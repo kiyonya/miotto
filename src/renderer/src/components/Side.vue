@@ -12,31 +12,26 @@
 
         </div>
         <div class="routes">
-            <RouterLink :to="{name:'Home'}">
-                首页
+            <RouterLink :to="{name:'Home'}" class="link" active-class="link-active">
+                <Icon icon="fluent:home-28-regular" />
+                <span>首页</span>
             </RouterLink>
-            <RouterLink :to="{name:'Config'}">
-                设置
+            <RouterLink :to="{name:'Config'}" class="link" active-class="link-active">
+                <Icon icon="fluent:settings-24-regular" />
+                <span>设置</span>
             </RouterLink>
         </div>
 
-        <button @click="openCreatePlaylist">创建</button>
-
-
+       
 
         <div class="playlist-list">
-
-
-
-
-
             <template v-for="group in renderPlaylists">
                 <div class="group">
                     <div class="title">
                         {{ group.name }}
                     </div>
                     <div class="playlists" v-if="!group.isWarp">
-                        <RouterLink class="playlist" v-for="playlist in group.playlists" :class="playlist.type" :to="{name:playlist.type === 'custom' ? 'PlaylistCustom' : 'PlaylistNcm' ,params:{id:playlist.id}}">
+                        <RouterLink class="playlist" v-for="playlist in group.playlists" :class="playlist.type" :to="{name:playlist.type === 'custom' ? 'PlaylistCustom' : 'PlaylistNcm' ,params:{id:playlist.id}}" active-class="playlist-active">
                             <img :src="playlist.cover" alt="" class="cover">
                             <div class="playlist-info">
                                 <div class="name">{{ playlist.name }}</div>
@@ -138,11 +133,44 @@ async function openCreatePlaylist(){
     height: 100%;
     background: var(--component);
     box-sizing: border-box;
-    padding: 1.2rem 0.7rem;
+    padding: 0.9rem 0.9rem;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.7rem;
     flex-shrink: 0;
+}
+
+.routes{
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 0.3rem;
+
+    .link{
+        color: var(--text-2);
+        text-decoration: none;
+        box-sizing: border-box;
+        padding: 0.4rem 0.5rem;
+        width: 100%;
+        height: fit-content;
+        font-size: 1rem;
+        border-radius: var(--br-1);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .link:hover{
+        background: var(--hover);
+    }
+
+    .link-active{
+        background: var(--accent);
+        color: var(--text-on-accent);
+        pointer-events: none;
+        font-weight: 500;
+    }
+    
 }
 
 .user {
@@ -194,6 +222,13 @@ async function openCreatePlaylist(){
     overflow-y: auto;
     gap: 1rem;
 
+    .playlist-active{
+        background: var(--accent);
+        color: var(--text-on-accent) !important;
+        pointer-events: none;
+        font-weight: 500;
+    }
+
     .group {
         width: 100%;
 
@@ -223,7 +258,7 @@ async function openCreatePlaylist(){
             flex-shrink: 0;
             box-sizing: border-box;
             padding: 0.35rem;
-            border-radius: 0 var(--br-1) var(--br-1) 0 ;
+            border-radius:var(--br-1) ;
             cursor: pointer;
             transition: .2s;
 
@@ -253,7 +288,6 @@ async function openCreatePlaylist(){
 
         .playlist:hover {
             background: var(--hover);
-            border-width: var(--br-1);
         }
 
         .ncm{
