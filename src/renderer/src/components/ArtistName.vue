@@ -9,7 +9,7 @@ import { AppTypes } from 'src/types/app';
 import { computed } from 'vue';
 
 interface ArtistTag {
-    platform:'ncm' | 'bili',
+    platform:'ncm' | 'bili' | 'unk',
     name:string,
     id:number
 }
