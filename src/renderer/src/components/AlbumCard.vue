@@ -25,6 +25,7 @@ const props = defineProps<{
     min-height: 0;
     flex-shrink: 0;
     gap: 0.3rem;
+    text-decoration: none;
 
     .album-cover {
         width: 100%;
@@ -35,7 +36,7 @@ const props = defineProps<{
     .album-info {
         display: flex;
         flex-direction: column;
-
+        
         .publish {
             font-size: 0.85rem;
             color: var(--text-3);
