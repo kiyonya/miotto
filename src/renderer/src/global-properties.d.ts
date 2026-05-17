@@ -15,7 +15,10 @@ declare module 'vue' {
 declare global {
     interface Window{
         $player:Player
-        $config:(key:string,value:any)=>void
+        $config:(key:string,value:any)=>void,
+        $util:{
+            $imgrsz: (url: string, r: number) => string,
+        }
     }
 }
 export { }

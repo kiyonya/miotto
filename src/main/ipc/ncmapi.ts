@@ -643,7 +643,7 @@ export class NCMAPIService {
         }
     }
 
-    public static async songDynamicCover(ncmid:number):Promise<string | null>{
+    public static async songDynamicCover(ncmid: number): Promise<string | null> {
         //NeteaseCloudMusicApi 的类型标注并不全面 我已经declare的扩展
         //所以在这里
         //fuck typescript
@@ -654,13 +654,22 @@ export class NCMAPIService {
             proxy: this.apiStore.get('proxy')
         })
         const body = req.body as any
-        const data = body.data as Record<string,string>
-        if(data.videoPlayUrl){
+        const data = body.data as Record<string, string>
+        if (data.videoPlayUrl) {
             return data.videoPlayUrl as string
         }
-        else{
+        else {
             return null
         }
+    }
+
+    public static async userProfile(uid: number): Promise<AppTypes.NCMTypes.IUserProfile> {
+        const req = await ncmapi.user_detail({
+            uid, cookie: this.apiStore.get('cookies'),
+            proxy: this.apiStore.get('proxy')
+        })
+        const profile = req.body.profile as AppTypes.NCMTypes.IUserProfile
+        return profile
     }
 
 
@@ -730,6 +739,7 @@ export class NCMAPIService {
         }
         return iar
     }
+
 
 
 
@@ -845,7 +855,11 @@ export function registerNCMApiIPC() {
         return await NCMAPIService.album(albumId)
     })
 
-    ipcMain.handle('ncmapi:songDynamicCover',async (_,id:number)=>{
+    ipcMain.handle('ncmapi:songDynamicCover', async (_, id: number) => {
         return await NCMAPIService.songDynamicCover(id)
+    })
+
+    ipcMain.handle('ncmapi:userProfile',async (_,uid:number)=>{
+        return await NCMAPIService.userProfile(uid)
     })
 }

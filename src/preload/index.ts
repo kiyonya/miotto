@@ -36,7 +36,8 @@ const ncmapi: AppAPI.NCM = {
   searchResultComplex: (keyword: string) => ipcRenderer.invoke('ncmapi:searchResultComplex', keyword),
   audioFingerprintMatch: (afp: string, duration: number = 3) => ipcRenderer.invoke('ncmapi:audioFingerprintMatch', afp, duration),
   album:(id:number)=>ipcRenderer.invoke('ncmapi:album',id),
-  songDynamicCover:(id:number)=>ipcRenderer.invoke('ncmapi:songDynamicCover',id)
+  songDynamicCover:(id:number)=>ipcRenderer.invoke('ncmapi:songDynamicCover',id),
+  userProfile:(uid:number)=>ipcRenderer.invoke('ncmapi:userProfile',uid)
 }
 
 const biliapi: AppAPI.Bili = {

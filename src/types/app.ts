@@ -313,6 +313,8 @@ export namespace AppTypes {
             description: string | null;
             vipType: number;
             followed: boolean;
+            follows:number,
+            followeds:number,
         }
 
         export type HomePageBlockCodeOrder = "HOMEPAGE_BLOCK_STYLE_RCMD" | "HOMEPAGE_BLOCK_RED_SIMILAR_SONG" | "HOMEPAGE_MUSIC_PODCAST_RCMD_BLOCK" | "HOMEPAGE_BLOCK_OLD_SUBSCRIBE_ARTIST_NEW"

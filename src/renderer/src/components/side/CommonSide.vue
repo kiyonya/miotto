@@ -1,5 +1,6 @@
+
 <template>
-    <div class="side">
+    <div class="common-side">
         <div class="user" v-if="profileStore.isLogin">
             <img :src="profileStore.profile?.avatarUrl" alt="" class="avatar">
             <div class="user-profile">
@@ -12,17 +13,10 @@
 
         </div>
         <div class="routes">
-            <RouterLink :to="{name:'Home'}" class="link" active-class="link-active">
-                <Icon icon="fluent:home-28-regular" />
-                <span>首页</span>
-            </RouterLink>
-            <RouterLink :to="{name:'Config'}" class="link" active-class="link-active">
-                <Icon icon="fluent:settings-24-regular" />
-                <span>设置</span>
-            </RouterLink>
+
         </div>
 
-       
+
 
         <div class="playlist-list">
             <template v-for="group in renderPlaylists">
@@ -31,7 +25,9 @@
                         {{ group.name }}
                     </div>
                     <div class="playlists" v-if="!group.isWarp">
-                        <RouterLink class="playlist" v-for="playlist in group.playlists" :class="playlist.type" :to="{name:playlist.type === 'custom' ? 'PlaylistCustom' : 'PlaylistNcm' ,params:{id:playlist.id}}" active-class="playlist-active">
+                        <RouterLink class="playlist" v-for="playlist in group.playlists" :class="playlist.type"
+                            :to="{ name: playlist.type === 'custom' ? 'PlaylistCustom' : 'PlaylistNcm', params: { id: playlist.id } }"
+                            active-class="playlist-active">
                             <img :src="playlist.cover" alt="" class="cover">
                             <div class="playlist-info">
                                 <div class="name">{{ playlist.name }}</div>
@@ -42,6 +38,7 @@
             </template>
         </div>
     </div>
+
 </template>
 <script lang="ts" setup>
 import { useProfileStore } from '@renderer/store/profile';
@@ -49,7 +46,7 @@ import { Icon } from '@iconify/vue';
 import { computed, onMounted, ref, watch } from 'vue';
 import { AppTypes } from 'src/types/app';
 import { usePlaylistStore } from '@renderer/store/playlist';
-import FunctionalWindows from './windows';
+import FunctionalWindows from '../windows';
 
 interface PlaylistRenderInterface {
     name: string,
@@ -70,18 +67,18 @@ const ncmCollectedPlaylists = ref<{
 const userPlaylists = computed<{
     name: string,
     playlists: AppTypes.IPlaylistBrief[]
-}>(()=>{
+}>(() => {
     return {
-        name:'我的歌单',
-        playlists:playlistStore.playlists
+        name: '我的歌单',
+        playlists: playlistStore.playlists
     }
 })
 
-const isLogin = computed(()=>profileStore.isLogin)
+const isLogin = computed(() => profileStore.isLogin)
 
 
 const renderPlaylists = computed<PlaylistRenderInterface[]>(() => {
-    const seq = [userPlaylists,ncmCreatedPlaylists, ncmCollectedPlaylists]
+    const seq = [userPlaylists, ncmCreatedPlaylists, ncmCollectedPlaylists]
     const renderData: PlaylistRenderInterface[] = []
     for (const group of seq) {
         if (group.value.playlists.length) {
@@ -109,7 +106,7 @@ onMounted(() => {
     }
     else {
         const watchHandler = watch(isLogin, () => {
-            if(isLogin.value){
+            if (isLogin.value) {
                 load()
                 watchHandler.stop()
             }
@@ -117,103 +114,17 @@ onMounted(() => {
     }
 })
 
-async function openCreatePlaylist(){
+async function openCreatePlaylist() {
     const playlistName = await FunctionalWindows.showCreatePlaylistWindow()
-    if(playlistName){
+    if (playlistName) {
         const id = await playlistStore.createPlaylist({
-            playlistName:playlistName
+            playlistName: playlistName
         })
         console.log(id)
     }
 }
 </script>
 <style scoped>
-.side {
-    width: 22%;
-    height: 100%;
-    background: var(--component);
-    box-sizing: border-box;
-    padding: 0.9rem 0.9rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.7rem;
-    flex-shrink: 0;
-}
-
-.routes{
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    gap: 0.3rem;
-
-    .link{
-        color: var(--text-2);
-        text-decoration: none;
-        box-sizing: border-box;
-        padding: 0.4rem 0.5rem;
-        width: 100%;
-        height: fit-content;
-        font-size: 1rem;
-        border-radius: var(--br-1);
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .link:hover{
-        background: var(--hover);
-    }
-
-    .link-active{
-        background: var(--accent);
-        color: var(--text-on-accent);
-        pointer-events: none;
-        font-weight: 500;
-    }
-    
-}
-
-.user {
-    width: 100%;
-    height: fit-content;
-    display: flex;
-    flex-direction: row;
-    gap: 0.8rem;
-    align-items: center;
-    color: var(--text-1);
-    background: var(--component-light);
-    box-sizing: border-box;
-    padding: 0.4rem 0.8rem;
-    border-radius: var(--br-2);
-    cursor: pointer;
-
-    .user-profile {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-    }
-
-    .avatar {
-        width: 2.3rem;
-        height: 2.3rem;
-        border-radius: 50%;
-    }
-
-    .name {
-        color: var(--text-1);
-        font-size: 1rem;
-    }
-
-    .sign {
-        color: var(--text-3);
-        font-size: 0.8rem;
-    }
-}
-
-.user:hover {
-    background: var(--hover);
-}
-
 .playlist-list {
     display: flex;
     flex-direction: column;
@@ -222,7 +133,7 @@ async function openCreatePlaylist(){
     overflow-y: auto;
     gap: 1rem;
 
-    .playlist-active{
+    .playlist-active {
         background: var(--accent);
         color: var(--text-on-accent) !important;
         pointer-events: none;
@@ -258,7 +169,7 @@ async function openCreatePlaylist(){
             flex-shrink: 0;
             box-sizing: border-box;
             padding: 0.35rem;
-            border-radius:var(--br-1) ;
+            border-radius: var(--br-1);
             cursor: pointer;
             transition: .2s;
 
@@ -290,7 +201,7 @@ async function openCreatePlaylist(){
             background: var(--hover);
         }
 
-        .ncm{
+        .ncm {
             border-left: solid rgb(221, 56, 56);
             border-width: 0;
         }

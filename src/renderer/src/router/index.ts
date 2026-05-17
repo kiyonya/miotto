@@ -46,6 +46,12 @@ const router = createRouter({
             path:'/album/:id',
             component:()=>import('@renderer/views/album/Album.vue'),
             props:true
+        },
+        {
+            name:"User",
+            path:'/user/ncm/:uid',
+            component:()=>import('@renderer/views/user/User.vue'),
+            props:true
         }
     ]
 })

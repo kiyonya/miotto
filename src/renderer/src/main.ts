@@ -113,6 +113,14 @@ async function startApp() {
     window.$player = player
     //@ts-ignore
     window.$config = useConfigStore().config
+    window.$util = {
+        $imgrsz: (url: string, r: number): string => {
+            if (/https:\/\/.*\.music\.126\.net\/.*\.jpg/.test(url)) {
+                return url + `?param=${r}y${r}&webp=true`
+            }
+            return url
+        }
+    }
     setupKeyListener()
     addRemoteControlHandler()
     window.emitter.post('app::renderMount', null)
@@ -140,6 +148,16 @@ async function startApp() {
 
 
     })
+
+    //@ts-ignore
+    window.userpage = (uid: number) => {
+        router.push({
+            name: "User",
+            params: {
+                uid: uid
+            }
+        })
+    }
 }
 
 startApp()

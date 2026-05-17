@@ -92,6 +92,7 @@ function handlePlay(song:AppTypes.ISong){
         display: flex;
         flex-direction: column;
         gap: 0.7rem;
+        flex-shrink: 0;
 
         .cover {
             width: 100%;

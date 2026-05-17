@@ -32,6 +32,8 @@ onUnmounted(() => {
     height: 12rem;
     aspect-ratio: 1/1;
 
+    --border-radius:var(--br-2);
+
     img{
         animation: fadein .3s ease-in-out;
     }
@@ -44,7 +46,7 @@ onUnmounted(() => {
         object-fit: cover;
         left: 0;
         bottom: 0;
-        border-radius: var(--br-2);
+        border-radius: var(--border-radius);
     }
 
     .layer-2 {
@@ -57,7 +59,7 @@ onUnmounted(() => {
         bottom: -0.2rem;
         filter: blur(30px);
         opacity: 0.3;
-        border-radius: var(--br-2);
+        border-radius: var(--border-radius);
         transition: .2s;
     }
 }

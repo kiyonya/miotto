@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Frame from './components/Frame.vue';
 import MusicPlayer from './components/musicplayer/MusicPlayer.vue';
-import Side from './components/Side.vue';
+import Side from './components/side/Side.vue';
 import SidePlaylist from './components/SidePlaylist.vue';
 import Tray from './components/Tray.vue';
 import { useAppStore } from './store/app';
